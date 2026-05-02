@@ -18,6 +18,7 @@ import { scrapeYouTube } from './youtube'
 import { scrapeLastfm } from './lastfm'
 import { scrapeGenius } from './genius'
 import { scrapeTheAudioDB } from './theaudiodb'
+import { scrapeSetlistFm } from './setlistfm'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
 import { computeVelocity } from '../normalizers/velocity'
 import { computeHeatmap } from '../normalizers/heatmap'
@@ -41,10 +42,11 @@ export async function scrapeAll(env: Env): Promise<void> {
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
     scrapeGenius(env),
+    scrapeSetlistFm(env),
   ])
 
   // Log results
-  const names = ['spotify-charts', 'apple-rss', 'deezer', 'youtube', 'tiktok', 'lastfm', 'theaudiodb', 'genius']
+  const names = ['spotify-charts', 'apple-rss', 'deezer', 'youtube', 'tiktok', 'lastfm', 'theaudiodb', 'genius', 'setlistfm']
   results.forEach((r, i) => {
     if (r.status === 'rejected') console.error(`[scrape] ${names[i]} failed:`, r.reason)
   })
@@ -87,6 +89,7 @@ export async function scrapeTrending(env: Env): Promise<void> {
     scrapeTikTok(env),
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
+    scrapeSetlistFm(env),
   ])
 
   // Recompute derived data

@@ -13,6 +13,7 @@
 
 import { Env } from '../index'
 import { writeKV } from '../store'
+import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
 
 // Well-known Deezer chart playlists (these are maintained by Deezer editorial)
 const PLAYLISTS = [
@@ -148,6 +149,9 @@ export async function scrapeDeezer(env: Env): Promise<void> {
             songId: `deezer:${track.id}`,
             songTitle: track.title,
             artistName: track.artist.name,
+            artEmoji: getArtEmoji(),
+            artGradient: getArtGradient(i),
+            albumCoverUrl: track.album?.cover_xl || track.album?.cover_big,
             metric: (track.rank || 100) * 10000,
             metricUnit: 'streams',
             badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
@@ -169,17 +173,3 @@ export async function scrapeDeezer(env: Env): Promise<void> {
   }
 }
 
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
-
-function generateSparkline(rank: number): number[] {
-  const base = Math.max(1, 101 - rank)
-  return Array.from({ length: 7 }, (_, i) =>
-    Math.max(1, base - Math.floor(Math.random() * 20) + i * 2)
-  )
-}

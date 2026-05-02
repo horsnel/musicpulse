@@ -10,6 +10,7 @@
 
 import { Env } from '../index'
 import { writeKV, readKV } from '../store'
+import { getArtGradient, getArtEmoji } from '../scrapers/helpers'
 
 interface TrendingEntry {
   id: string
@@ -85,12 +86,19 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
           songId: normalizeKey(song.songTitle, song.artistName),
           songTitle: song.songTitle,
           artistName: song.artistName,
+          artEmoji: getArtEmoji(),
+          artGradient: getArtGradient(scores.length),
           platforms: song.platforms as any[],
           score: Math.min(100, Math.round(platformWeight + rankWeight + surgeWeight)),
         }
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20)
+
+    // Fix: assign gradients based on final sort order
+    scores.forEach((s, i) => {
+      s.artGradient = getArtGradient(i)
+    })
 
     await writeKV(env, 'cross-platform', scores)
     console.log(`[cross-platform] ${scores.length} scores computed`)

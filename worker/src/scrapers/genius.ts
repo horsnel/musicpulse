@@ -9,6 +9,7 @@
 
 import { Env } from '../index'
 import { writeKV } from '../store'
+import { slugify } from './helpers'
 
 export async function scrapeGenius(env: Env): Promise<void> {
   console.log('[genius] Starting...')
@@ -88,12 +89,3 @@ interface GeniusChartResponse {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}

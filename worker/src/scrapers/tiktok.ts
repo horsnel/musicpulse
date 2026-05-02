@@ -13,6 +13,7 @@
 
 import { Env } from '../index'
 import { writeKV, readKV } from '../store'
+import { getArtGradient, getArtEmoji } from './helpers'
 
 export async function scrapeTikTok(env: Env): Promise<void> {
   console.log('[tiktok] Starting...')
@@ -90,6 +91,9 @@ async function generateFromAppleMusic(env: Env): Promise<void> {
     songId: item.songId,
     songTitle: item.songTitle,
     artistName: item.artistName,
+    artEmoji: item.artEmoji || getArtEmoji(),
+    artGradient: item.artGradient || getArtGradient(i),
+    albumCoverUrl: item.albumCoverUrl,
     metric: Math.max(100000, 5000000 - i * 500000),
     metricUnit: 'uses',
     badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : i < 6 ? 'new' : null) as any,

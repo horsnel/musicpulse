@@ -9,6 +9,7 @@
 
 import { Env } from '../index'
 import { writeKV } from '../store'
+import { slugify } from './helpers'
 
 export async function scrapeLastfm(env: Env): Promise<void> {
   console.log('[lastfm] Starting...')
@@ -97,12 +98,3 @@ interface LastFmTopTags {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}

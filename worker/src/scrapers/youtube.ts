@@ -10,6 +10,7 @@
 
 import { Env } from '../index'
 import { writeKV, readKV } from '../store'
+import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
 
 export async function scrapeYouTube(env: Env): Promise<void> {
   console.log('[youtube] Starting...')
@@ -111,6 +112,9 @@ async function generateFromAppleMusic(env: Env): Promise<void> {
     songId: item.songId,
     songTitle: item.songTitle,
     artistName: item.artistName,
+    artEmoji: item.artEmoji || getArtEmoji(),
+    artGradient: item.artGradient || getArtGradient(i),
+    albumCoverUrl: item.albumCoverUrl,
     metric: Math.max(1000000, 200000000 - i * 20000000),
     metricUnit: 'views',
     badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
@@ -141,21 +145,6 @@ function parseDuration(iso: string): number {
   const m = parseInt(match[2] || '0')
   const s = parseInt(match[3] || '0')
   return (h * 3600 + m * 60 + s) * 1000
-}
-
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
-
-function generateSparkline(rank: number): number[] {
-  const base = Math.max(1, 101 - rank)
-  return Array.from({ length: 7 }, (_, i) =>
-    Math.max(1, base - Math.floor(Math.random() * 20) + i * 2)
-  )
 }
 
 // ── Types ─────────────────────────────────────────────────────

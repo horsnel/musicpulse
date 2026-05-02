@@ -9,6 +9,7 @@
 
 import { Env } from '../index'
 import { writeKV } from '../store'
+import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
 
 const FEEDS = [
   { id: 'global', country: 'us' },
@@ -27,7 +28,7 @@ interface AppleRSSTrack {
   artistName: string
   artworkUrl100: string
   releaseDate: string
-  genres: string[]
+  genres: Array<string | { genreId: string; name: string; url: string }>
   url: string
 }
 
@@ -63,7 +64,7 @@ export async function scrapeAppleRSS(env: Env): Promise<void> {
           albumCoverUrl: track.artworkUrl100?.replace('100x100', '600x600'),
           durationMs: 0,
           releaseDate: track.releaseDate?.split('T')[0] || '',
-          genres: track.genres || [],
+          genres: (track.genres || []).map(g => typeof g === 'string' ? g : g.name),
           popularityScore: Math.max(0, 100 - i),
           appleUrl: track.url,
         },
@@ -93,6 +94,9 @@ export async function scrapeAppleRSS(env: Env): Promise<void> {
           songId: track.id,
           songTitle: track.name,
           artistName: track.artistName,
+          artEmoji: getArtEmoji(typeof track.genres?.[0] === 'string' ? track.genres[0] : track.genres?.[0]?.name),
+          artGradient: getArtGradient(i),
+          albumCoverUrl: track.artworkUrl100?.replace('100x100', '600x600'),
           metric: Math.max(100000, 10000000 - i * 1000000), // Estimated plays
           metricUnit: 'plays',
           badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
@@ -119,19 +123,3 @@ interface AppleRSSResponse {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
-
-function generateSparkline(rank: number): number[] {
-  const base = Math.max(1, 101 - rank)
-  return Array.from({ length: 7 }, (_, i) =>
-    Math.max(1, base - Math.floor(Math.random() * 20) + i * 2)
-  )
-}

@@ -7,6 +7,7 @@
 
 import { Env } from '../index'
 import { writeKV, readKV } from '../store'
+import { getArtGradient, getArtEmoji } from '../scrapers/helpers'
 
 interface TrendingEntry {
   id: string
@@ -82,6 +83,8 @@ export async function computeVelocity(env: Env): Promise<void> {
           songId: song.songId || song.id,
           songTitle: song.songTitle,
           artistName: song.artistName,
+          artEmoji: getArtEmoji(),
+          artGradient: getArtGradient(0),
           growthPercent,
           sparkline,
           context,
@@ -93,7 +96,7 @@ export async function computeVelocity(env: Env): Promise<void> {
         return bVal - aVal
       })
       .slice(0, 20)
-      .map((item, i) => ({ ...item, rank: i + 1 }))
+      .map((item, i) => ({ ...item, rank: i + 1, artGradient: getArtGradient(i) }))
 
     await writeKV(env, 'velocity', velocityItems)
     console.log(`[velocity] ${velocityItems.length} items computed`)

@@ -98,6 +98,11 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
       return readKV(env, 'albums:new', limit)
     }
 
+    // ── Tours (Setlist.fm) ───────────────────────────────
+    case 'artists/tours': {
+      return readKV(env, 'artists:tours')
+    }
+
     // ── Countries ────────────────────────────────────────────
     case 'charts/countries': {
       return readKV(env, 'countries')

@@ -21,6 +21,7 @@
 
 import { Env } from '../index'
 import { writeKV } from '../store'
+import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
 
 const PLAYLISTS = [
   { id: 'global', name: 'Global', playlistId: '37i9dQZEVXbMDoHDwVN2tF' },
@@ -128,6 +129,9 @@ export async function scrapeSpotifyCharts(env: Env): Promise<void> {
                 songId: track.id,
                 songTitle: track.name,
                 artistName: track.artists?.map(a => a.name).join(', ') || '',
+                artEmoji: getArtEmoji(),
+                artGradient: getArtGradient(i),
+                albumCoverUrl: albumImage?.url,
                 metric: (track.popularity || 50) * 100000, // Estimated from popularity
                 metricUnit: 'streams',
                 badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
@@ -185,22 +189,6 @@ async function getAccessToken(env: Env): Promise<string | null> {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
-
-function generateSparkline(rank: number): number[] {
-  const base = Math.max(1, 101 - rank)
-  return Array.from({ length: 7 }, (_, i) =>
-    Math.max(1, base - Math.floor(Math.random() * 20) + i * 2)
-  )
-}
 
 // ── Types ─────────────────────────────────────────────────────
 

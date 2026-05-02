@@ -26,6 +26,7 @@ export interface Env {
   SPOTIFY_CLIENT_SECRET?: string
   SCRAPE_SECRET?: string
   ENVIRONMENT?: string
+  ALLOWED_ORIGINS?: string  // CORS origins for the frontend (comma-separated)
 }
 
 export default {
