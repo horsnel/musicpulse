@@ -1,0 +1,30 @@
+name = "musicpulse-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# ── KV Namespace ──────────────────────────────────────────────────
+# Create with: wrangler kv namespace create MUSICPULSE_DATA
+# Then paste the ID below.
+[[kv_namespaces]]
+binding = "DATA"
+id = "9be5ae1c24164b3b9eaa076af454ee17"
+
+# ── Cron Triggers ─────────────────────────────────────────────────
+# Charts refresh every 6 hours, trending every 2 hours
+[triggers]
+crons = ["0 */6 * * *", "0 */2 * * *"]
+
+# ── Environment Variables ─────────────────────────────────────────
+[vars]
+ENVIRONMENT = "production"
+
+# ── Secrets (set via `wrangler secret put`) ───────────────────────
+# YOUTUBE_API_KEY       — YouTube Data API v3 key
+# LASTFM_API_KEY        — Last.fm API key
+# GENIUS_API_KEY        — Genius API client access token
+# THEAUDIODB_API_KEY    — TheAudioDB API key (free)
+# SETLISTFM_API_KEY     — Setlist.fm API key
+# MUSIXMATCH_API_KEY    — Musixmatch API key
+# SPOTIFY_CLIENT_ID     — Spotify app client ID
+# SPOTIFY_CLIENT_SECRET — Spotify app client secret
+# SCRAPE_SECRET         — Secret for manual /api/scrape trigger

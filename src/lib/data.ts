@@ -2,10 +2,13 @@
  * MusicPulse Data Layer
  *
  * All data fetching goes through this file.
- * In production each function calls your Cloudflare D1 database via
- * the /api/* route handlers. During development mock data is returned.
+ * Strategy: Try the Worker API first → fall back to mock data.
  *
- * Swap `USE_MOCK` to false and fill in your D1 bindings when ready.
+ * Set NEXT_PUBLIC_API_URL to your deployed Worker URL to enable live data.
+ * If the Worker is unreachable or returns an error, mock data is used instead.
+ *
+ * Data sources (no key needed): Spotify Charts CSV, Apple Music RSS, Deezer, TikTok Creative Center
+ * Data sources (key needed): YouTube, Last.fm, Genius, TheAudioDB, Setlist.fm, Musixmatch
  */
 
 import type {
@@ -14,8 +17,61 @@ import type {
   Platform, ChartRegion, TrendingPlatform,
 } from '@/types'
 
-const USE_MOCK = true
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
+const API_TIMEOUT = 8000 // 8 second timeout for API calls
+
+// ─── API HELPER ────────────────────────────────────────────────
+
+async function apiFetch<T>(path: string, fallback: T): Promise<T> {
+  if (!API_URL) return fallback
+
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), API_TIMEOUT)
+
+    const res = await fetch(`${API_URL}${path}`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
+    })
+    clearTimeout(timer)
+
+    if (!res.ok) return fallback
+
+    const json = await res.json()
+    if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+      return json.data
+    }
+    if (json.data && !Array.isArray(json.data) && json.data) {
+      return json.data
+    }
+    return fallback
+  } catch {
+    // Network error, timeout, or CORS issue — fall back to mock
+    return fallback
+  }
+}
+
+// ─── DATA STATUS ───────────────────────────────────────────────
+
+/** Returns true if the app is connected to the live API */
+export function isLiveMode(): boolean {
+  return API_URL.length > 0
+}
+
+/** Fetches the last scrape timestamp from the API */
+export async function getLastScrapeTime(): Promise<string | null> {
+  if (!API_URL) return null
+  try {
+    const res = await fetch(`${API_URL}/api/scrape/status`, {
+      headers: { 'Accept': 'application/json' },
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.data?.lastRun ?? null
+  } catch {
+    return null
+  }
+}
 
 // ─── CHARTS ────────────────────────────────────────────────────
 
@@ -24,26 +80,19 @@ export async function getChartEntries(
   region: ChartRegion = 'global',
   limit = 50,
 ): Promise<ChartEntry[]> {
-  if (USE_MOCK) return MOCK_CHART_ENTRIES.slice(0, limit)
-
-  const res = await fetch(
-    `${BASE_URL}/api/charts?platform=${platform}&region=${region}&limit=${limit}`,
-    {},
+  return apiFetch<ChartEntry[]>(
+    `/api/charts?platform=${platform}&region=${region}&limit=${limit}`,
+    MOCK_CHART_ENTRIES.slice(0, limit),
   )
-  if (!res.ok) throw new Error('Failed to fetch chart entries')
-  const json = await res.json()
-  return json.data
 }
 
 export async function getCountryCharts(): Promise<
   Array<{ region: ChartRegion; flag: string; name: string; topSong: string; topArtist: string }>
 > {
-  if (USE_MOCK) return MOCK_COUNTRY_CHARTS
-  const res = await fetch(`${BASE_URL}/api/charts/countries`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch(
+    '/api/charts/countries',
+    MOCK_COUNTRY_CHARTS,
+  )
 }
 
 // ─── TRENDING ──────────────────────────────────────────────────
@@ -52,85 +101,66 @@ export async function getTrending(
   platform: TrendingPlatform,
   limit = 8,
 ): Promise<TrendingItem[]> {
-  if (USE_MOCK) return MOCK_TRENDING[platform]?.slice(0, limit) ?? []
-
-  const res = await fetch(`${BASE_URL}/api/trending?platform=${platform}&limit=${limit}`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<TrendingItem[]>(
+    `/api/trending?platform=${platform}&limit=${limit}`,
+    MOCK_TRENDING[platform]?.slice(0, limit) ?? [],
+  )
 }
 
 export async function getCrossPlatformScores(limit = 5): Promise<CrossPlatformScore[]> {
-  if (USE_MOCK) return MOCK_CROSS_PLATFORM.slice(0, limit)
-  const res = await fetch(`${BASE_URL}/api/trending/cross-platform`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<CrossPlatformScore[]>(
+    `/api/trending/cross-platform?limit=${limit}`,
+    MOCK_CROSS_PLATFORM.slice(0, limit),
+  )
 }
 
 export async function getVelocityItems(limit = 5): Promise<VelocityItem[]> {
-  if (USE_MOCK) return MOCK_VELOCITY.slice(0, limit)
-  const res = await fetch(`${BASE_URL}/api/trending/velocity`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<VelocityItem[]>(
+    `/api/trending/velocity?limit=${limit}`,
+    MOCK_VELOCITY.slice(0, limit),
+  )
 }
 
 export async function getGenreHeatmap(): Promise<GenreHeatRow[]> {
-  if (USE_MOCK) return MOCK_GENRE_HEAT
-  const res = await fetch(`${BASE_URL}/api/trending/heatmap`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<GenreHeatRow[]>(
+    '/api/trending/heatmap',
+    MOCK_GENRE_HEAT,
+  )
 }
 
 // ─── ARTISTS ───────────────────────────────────────────────────
 
 export async function getArtist(slug: string): Promise<Artist | null> {
-  if (USE_MOCK) return MOCK_ARTIST
-  const res = await fetch(`${BASE_URL}/api/artists/${slug}`, {
-    
-  })
-  if (res.status === 404) return null
-  const json = await res.json()
-  return json.data
+  return apiFetch<Artist | null>(
+    `/api/artists/${slug}`,
+    MOCK_ARTIST,
+  )
 }
 
 export async function getTopArtists(limit = 6): Promise<Artist[]> {
-  if (USE_MOCK) return MOCK_TOP_ARTISTS.slice(0, limit)
-  const res = await fetch(`${BASE_URL}/api/artists?sort=listeners&limit=${limit}`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<Artist[]>(
+    `/api/artists?sort=listeners&limit=${limit}`,
+    MOCK_TOP_ARTISTS.slice(0, limit),
+  )
 }
 
 // ─── SONGS ─────────────────────────────────────────────────────
 
 export async function getSong(slug: string): Promise<Song | null> {
-  if (USE_MOCK) return MOCK_SONG
-  const res = await fetch(`${BASE_URL}/api/songs/${slug}`, {
-    
-  })
-  if (res.status === 404) return null
-  const json = await res.json()
-  return json.data
+  return apiFetch<Song | null>(
+    `/api/songs/${slug}`,
+    MOCK_SONG,
+  )
 }
 
 export async function getNewReleases(limit = 5): Promise<Album[]> {
-  if (USE_MOCK) return MOCK_NEW_RELEASES.slice(0, limit)
-  const res = await fetch(`${BASE_URL}/api/albums/new?limit=${limit}`, {
-    
-  })
-  const json = await res.json()
-  return json.data
+  return apiFetch<Album[]>(
+    `/api/albums/new?limit=${limit}`,
+    MOCK_NEW_RELEASES.slice(0, limit),
+  )
 }
 
-// ─── MOCK DATA (replace with real D1 queries) ──────────────────
+// ─── MOCK DATA (fallback when Worker API is unavailable) ───────
 
 const MOCK_SONG: Song = {
   id: 'apt-rose-bruno',
@@ -197,68 +227,68 @@ const MOCK_CHART_ENTRIES: ChartEntry[] = [
 ]
 
 const MOCK_COUNTRY_CHARTS = [
-  { region: 'us' as ChartRegion, flag: '🇺🇸', name: 'United States', topSong: 'Die With A Smile', topArtist: 'Lady Gaga, Bruno Mars' },
-  { region: 'uk' as ChartRegion, flag: '🇬🇧', name: 'United Kingdom', topSong: 'BIRDS OF A FEATHER', topArtist: 'Billie Eilish' },
-  { region: 'nigeria' as ChartRegion, flag: '🇳🇬', name: 'Nigeria', topSong: 'Commas', topArtist: 'Davido' },
-  { region: 'korea' as ChartRegion, flag: '🇰🇷', name: 'South Korea', topSong: 'APT.', topArtist: 'Rose, Bruno Mars' },
-  { region: 'brazil' as ChartRegion, flag: '🇧🇷', name: 'Brazil', topSong: 'Gata Only', topArtist: 'FloyyMenor' },
-  { region: 'germany' as ChartRegion, flag: '🇩🇪', name: 'Germany', topSong: 'Die With A Smile', topArtist: 'Lady Gaga, Bruno Mars' },
-  { region: 'south-africa' as ChartRegion, flag: '🇿🇦', name: 'South Africa', topSong: 'Twe Twe', topArtist: 'Kizz Daniel' },
+  { region: 'us' as ChartRegion, flag: '\u{1F1FA}\u{1F1F8}', name: 'United States', topSong: 'Die With A Smile', topArtist: 'Lady Gaga, Bruno Mars' },
+  { region: 'uk' as ChartRegion, flag: '\u{1F1EC}\u{1F1E7}', name: 'United Kingdom', topSong: 'BIRDS OF A FEATHER', topArtist: 'Billie Eilish' },
+  { region: 'nigeria' as ChartRegion, flag: '\u{1F1F3}\u{1F1EC}', name: 'Nigeria', topSong: 'Commas', topArtist: 'Davido' },
+  { region: 'korea' as ChartRegion, flag: '\u{1F1F0}\u{1F1F7}', name: 'South Korea', topSong: 'APT.', topArtist: 'Rose, Bruno Mars' },
+  { region: 'brazil' as ChartRegion, flag: '\u{1F1E7}\u{1F1F7}', name: 'Brazil', topSong: 'Gata Only', topArtist: 'FloyyMenor' },
+  { region: 'germany' as ChartRegion, flag: '\u{1F1E9}\u{1F1EA}', name: 'Germany', topSong: 'Die With A Smile', topArtist: 'Lady Gaga, Bruno Mars' },
+  { region: 'south-africa' as ChartRegion, flag: '\u{1F1FF}\u{1F1E6}', name: 'South Africa', topSong: 'Twe Twe', topArtist: 'Kizz Daniel' },
 ]
 
 const MOCK_TRENDING: Record<TrendingPlatform, TrendingItem[]> = {
   tiktok: [
-    { id: 'tt1', rank: 1, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '🌸', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 4200000, metricUnit: 'uses', badge: 'hot', surgePercent: 92, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt2', rank: 2, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 3800000, metricUnit: 'uses', badge: null, surgePercent: 82, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt3', rank: 3, rankChange: 2, isNew: false, platform: 'tiktok', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '☕', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 3100000, metricUnit: 'uses', badge: null, surgePercent: 72, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt4', rank: 4, rankChange: 4, isNew: false, platform: 'tiktok', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '🎺', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 2700000, metricUnit: 'uses', badge: 'rising', surgePercent: 62, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt5', rank: 5, rankChange: -1, isNew: false, platform: 'tiktok', songTitle: 'Lose Control', artistName: 'Teddy Swims', artEmoji: '🌊', artGradient: 'linear-gradient(135deg,#0f2027,#2c5364)', metric: 2400000, metricUnit: 'uses', badge: null, surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt6', rank: 6, rankChange: 0, isNew: true, platform: 'tiktok', songTitle: 'Beautiful Things', artistName: 'Benson Boone', artEmoji: '💫', artGradient: 'linear-gradient(135deg,#1a4a6e,#2196f3)', metric: 2100000, metricUnit: 'uses', badge: 'new', surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt7', rank: 7, rankChange: 3, isNew: false, platform: 'tiktok', songTitle: 'Commas', artistName: 'Davido', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 1900000, metricUnit: 'uses', badge: null, surgePercent: 43, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tt8', rank: 8, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 1700000, metricUnit: 'uses', badge: null, surgePercent: 38, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt1', rank: 1, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 4200000, metricUnit: 'uses', badge: 'hot', surgePercent: 92, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt2', rank: 2, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 3800000, metricUnit: 'uses', badge: null, surgePercent: 82, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt3', rank: 3, rankChange: 2, isNew: false, platform: 'tiktok', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '\u{2615}', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 3100000, metricUnit: 'uses', badge: null, surgePercent: 72, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt4', rank: 4, rankChange: 4, isNew: false, platform: 'tiktok', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '\u{1F3BA}', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 2700000, metricUnit: 'uses', badge: 'rising', surgePercent: 62, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt5', rank: 5, rankChange: -1, isNew: false, platform: 'tiktok', songTitle: 'Lose Control', artistName: 'Teddy Swims', artEmoji: '\u{1F30A}', artGradient: 'linear-gradient(135deg,#0f2027,#2c5364)', metric: 2400000, metricUnit: 'uses', badge: null, surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt6', rank: 6, rankChange: 0, isNew: true, platform: 'tiktok', songTitle: 'Beautiful Things', artistName: 'Benson Boone', artEmoji: '\u{1F4AB}', artGradient: 'linear-gradient(135deg,#1a4a6e,#2196f3)', metric: 2100000, metricUnit: 'uses', badge: 'new', surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt7', rank: 7, rankChange: 3, isNew: false, platform: 'tiktok', songTitle: 'Commas', artistName: 'Davido', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 1900000, metricUnit: 'uses', badge: null, surgePercent: 43, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tt8', rank: 8, rankChange: 0, isNew: false, platform: 'tiktok', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 1700000, metricUnit: 'uses', badge: null, surgePercent: 38, updatedAt: '2025-04-27T12:00:00Z' },
   ],
   twitter: [
-    { id: 'tw1', rank: 1, rankChange: 0, isNew: false, platform: 'twitter', songTitle: '#KendrickLamar', artistName: 'Grammy performance', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 890000, metricUnit: 'tweets', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tw2', rank: 2, rankChange: 1, isNew: false, platform: 'twitter', songTitle: '#GNCiSHAKA', artistName: 'New Burna Boy drop', artEmoji: '🌍', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', metric: 650000, metricUnit: 'tweets', badge: null, surgePercent: 73, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tw3', rank: 3, rankChange: 0, isNew: true, platform: 'twitter', songTitle: '#ChappellRoan', artistName: 'Pink Pony anniversary', artEmoji: '🌹', artGradient: 'linear-gradient(135deg,#b02060,#e05090)', metric: 420000, metricUnit: 'tweets', badge: 'new', surgePercent: 47, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tw4', rank: 4, rankChange: -2, isNew: false, platform: 'twitter', songTitle: '#NewMusic', artistName: 'Friday releases thread', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a3060,#3060c0)', metric: 380000, metricUnit: 'tweets', badge: null, surgePercent: 43, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'tw5', rank: 5, rankChange: 5, isNew: false, platform: 'twitter', songTitle: '#WizKid', artistName: 'New album rumors', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 310000, metricUnit: 'tweets', badge: 'peak', surgePercent: 35, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tw1', rank: 1, rankChange: 0, isNew: false, platform: 'twitter', songTitle: '#KendrickLamar', artistName: 'Grammy performance', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 890000, metricUnit: 'tweets', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tw2', rank: 2, rankChange: 1, isNew: false, platform: 'twitter', songTitle: '#GNCiSHAKA', artistName: 'New Burna Boy drop', artEmoji: '\u{1F30D}', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', metric: 650000, metricUnit: 'tweets', badge: null, surgePercent: 73, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tw3', rank: 3, rankChange: 0, isNew: true, platform: 'twitter', songTitle: '#ChappellRoan', artistName: 'Pink Pony anniversary', artEmoji: '\u{1F339}', artGradient: 'linear-gradient(135deg,#b02060,#e05090)', metric: 420000, metricUnit: 'tweets', badge: 'new', surgePercent: 47, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tw4', rank: 4, rankChange: -2, isNew: false, platform: 'twitter', songTitle: '#NewMusic', artistName: 'Friday releases thread', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a3060,#3060c0)', metric: 380000, metricUnit: 'tweets', badge: null, surgePercent: 43, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'tw5', rank: 5, rankChange: 5, isNew: false, platform: 'twitter', songTitle: '#WizKid', artistName: 'New album rumors', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 310000, metricUnit: 'tweets', badge: 'peak', surgePercent: 35, updatedAt: '2025-04-27T12:00:00Z' },
   ],
   youtube: [
-    { id: 'yt1', rank: 1, rankChange: 0, isNew: false, platform: 'youtube', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 280000000, metricUnit: 'views', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'yt2', rank: 2, rankChange: 1, isNew: false, platform: 'youtube', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 195000000, metricUnit: 'views', badge: null, surgePercent: 70, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'yt3', rank: 3, rankChange: 0, isNew: false, platform: 'youtube', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '🌸', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 180000000, metricUnit: 'views', badge: null, surgePercent: 64, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'yt4', rank: 4, rankChange: 2, isNew: false, platform: 'youtube', songTitle: 'Twe Twe', artistName: 'Kizz Daniel', artEmoji: '🌍', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 92000000, metricUnit: 'views', badge: null, surgePercent: 33, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'yt5', rank: 5, rankChange: -1, isNew: false, platform: 'youtube', songTitle: 'Commas', artistName: 'Davido', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', metric: 74000000, metricUnit: 'views', badge: null, surgePercent: 26, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'yt1', rank: 1, rankChange: 0, isNew: false, platform: 'youtube', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 280000000, metricUnit: 'views', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'yt2', rank: 2, rankChange: 1, isNew: false, platform: 'youtube', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 195000000, metricUnit: 'views', badge: null, surgePercent: 70, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'yt3', rank: 3, rankChange: 0, isNew: false, platform: 'youtube', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 180000000, metricUnit: 'views', badge: null, surgePercent: 64, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'yt4', rank: 4, rankChange: 2, isNew: false, platform: 'youtube', songTitle: 'Twe Twe', artistName: 'Kizz Daniel', artEmoji: '\u{1F30D}', artGradient: 'linear-gradient(135deg,#1a0a18,#381028)', metric: 92000000, metricUnit: 'views', badge: null, surgePercent: 33, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'yt5', rank: 5, rankChange: -1, isNew: false, platform: 'youtube', songTitle: 'Commas', artistName: 'Davido', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', metric: 74000000, metricUnit: 'views', badge: null, surgePercent: 26, updatedAt: '2025-04-27T12:00:00Z' },
   ],
   spotify: [
-    { id: 'sp1', rank: 1, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 12400000, metricUnit: 'streams', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'sp2', rank: 2, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 11800000, metricUnit: 'streams', badge: null, surgePercent: 88, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'sp1', rank: 1, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 12400000, metricUnit: 'streams', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'sp2', rank: 2, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 11800000, metricUnit: 'streams', badge: null, surgePercent: 88, updatedAt: '2025-04-27T12:00:00Z' },
   ],
   apple: [
-    { id: 'am1', rank: 1, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 8900000, metricUnit: 'plays', badge: 'hot', surgePercent: 96, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'am2', rank: 2, rankChange: 2, isNew: false, platform: 'apple', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '🌸', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 7600000, metricUnit: 'plays', badge: 'rising', surgePercent: 85, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'am3', rank: 3, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 6200000, metricUnit: 'plays', badge: null, surgePercent: 72, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'am4', rank: 4, rankChange: -1, isNew: false, platform: 'apple', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '☕', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 5800000, metricUnit: 'plays', badge: null, surgePercent: 64, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'am5', rank: 5, rankChange: 3, isNew: false, platform: 'apple', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 5100000, metricUnit: 'plays', badge: 'new', surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
-    { id: 'am6', rank: 6, rankChange: 0, isNew: true, platform: 'apple', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '🎺', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 4700000, metricUnit: 'plays', badge: null, surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am1', rank: 1, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 8900000, metricUnit: 'plays', badge: 'hot', surgePercent: 96, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am2', rank: 2, rankChange: 2, isNew: false, platform: 'apple', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 7600000, metricUnit: 'plays', badge: 'rising', surgePercent: 85, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am3', rank: 3, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 6200000, metricUnit: 'plays', badge: null, surgePercent: 72, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am4', rank: 4, rankChange: -1, isNew: false, platform: 'apple', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '\u{2615}', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 5800000, metricUnit: 'plays', badge: null, surgePercent: 64, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am5', rank: 5, rankChange: 3, isNew: false, platform: 'apple', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 5100000, metricUnit: 'plays', badge: 'new', surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am6', rank: 6, rankChange: 0, isNew: true, platform: 'apple', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '\u{1F3BA}', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 4700000, metricUnit: 'plays', badge: null, surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
   ],
 }
 
 const MOCK_CROSS_PLATFORM: CrossPlatformScore[] = [
-  { songId: 'apt', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '🌸', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', platforms: ['tiktok', 'twitter', 'youtube', 'spotify'], score: 98 },
-  { songId: 'dws', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', platforms: ['tiktok', 'youtube', 'spotify'], score: 94 },
-  { songId: 'nlu', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', platforms: ['twitter', 'youtube', 'spotify'], score: 89 },
-  { songId: 'esp', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '☕', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', platforms: ['tiktok', 'youtube'], score: 82 },
-  { songId: 'commas', songTitle: 'Commas', artistName: 'Davido', artEmoji: '🌍', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', platforms: ['tiktok', 'youtube', 'spotify'], score: 77 },
+  { songId: 'apt', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', platforms: ['tiktok', 'twitter', 'youtube', 'spotify'], score: 98 },
+  { songId: 'dws', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', platforms: ['tiktok', 'youtube', 'spotify'], score: 94 },
+  { songId: 'nlu', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', platforms: ['twitter', 'youtube', 'spotify'], score: 89 },
+  { songId: 'esp', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '\u{2615}', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', platforms: ['tiktok', 'youtube'], score: 82 },
+  { songId: 'commas', songTitle: 'Commas', artistName: 'Davido', artEmoji: '\u{1F30D}', artGradient: 'linear-gradient(135deg,#1a1000,#3a2800)', platforms: ['tiktok', 'youtube', 'spotify'], score: 77 },
 ]
 
 const MOCK_VELOCITY: VelocityItem[] = [
-  { rank: 1, songId: 'bt', songTitle: 'Beautiful Things', artistName: 'Benson Boone', artEmoji: '💫', artGradient: 'linear-gradient(135deg,#1a4a6e,#2196f3)', growthPercent: null, sparkline: [0, 0, 0, 0.1, 0.4, 0.8, 1], context: 'New Entry' },
-  { rank: 2, songId: 'luther', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '🎺', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', growthPercent: 840, sparkline: [0.1, 0.15, 0.25, 0.4, 0.6, 0.8, 1], context: 'Rising fast' },
-  { rank: 3, songId: 'gata', songTitle: 'Gata Only', artistName: 'FloyyMenor, Cris MJ', artEmoji: '🔥', artGradient: 'linear-gradient(135deg,#b85500,#ff8c00)', growthPercent: 620, sparkline: [0.1, 0.2, 0.3, 0.5, 0.7, 0.85, 1], context: 'TikTok surge' },
-  { rank: 4, songId: 'nlu', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', growthPercent: 380, sparkline: [0.2, 0.3, 0.4, 0.55, 0.7, 0.85, 1], context: 'Grammy boost' },
-  { rank: 5, songId: 'disease', songTitle: 'Disease', artistName: 'Lady Gaga', artEmoji: '✨', artGradient: 'linear-gradient(135deg,#6a1a6e,#b06cff)', growthPercent: 290, sparkline: [0, 0, 0.1, 0.3, 0.6, 0.8, 1], context: 'New single' },
+  { rank: 1, songId: 'bt', songTitle: 'Beautiful Things', artistName: 'Benson Boone', artEmoji: '\u{1F4AB}', artGradient: 'linear-gradient(135deg,#1a4a6e,#2196f3)', growthPercent: null, sparkline: [0, 0, 0, 0.1, 0.4, 0.8, 1], context: 'New Entry' },
+  { rank: 2, songId: 'luther', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '\u{1F3BA}', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', growthPercent: 840, sparkline: [0.1, 0.15, 0.25, 0.4, 0.6, 0.8, 1], context: 'Rising fast' },
+  { rank: 3, songId: 'gata', songTitle: 'Gata Only', artistName: 'FloyyMenor, Cris MJ', artEmoji: '\u{1F525}', artGradient: 'linear-gradient(135deg,#b85500,#ff8c00)', growthPercent: 620, sparkline: [0.1, 0.2, 0.3, 0.5, 0.7, 0.85, 1], context: 'TikTok surge' },
+  { rank: 4, songId: 'nlu', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', growthPercent: 380, sparkline: [0.2, 0.3, 0.4, 0.55, 0.7, 0.85, 1], context: 'Grammy boost' },
+  { rank: 5, songId: 'disease', songTitle: 'Disease', artistName: 'Lady Gaga', artEmoji: '\u{2728}', artGradient: 'linear-gradient(135deg,#6a1a6e,#b06cff)', growthPercent: 290, sparkline: [0, 0, 0.1, 0.3, 0.6, 0.8, 1], context: 'New single' },
 ]
 
 const MOCK_GENRE_HEAT: GenreHeatRow[] = [
