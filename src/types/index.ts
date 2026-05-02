@@ -70,6 +70,8 @@ export interface Song {
   tiktokUrl?: string
   popularityScore?: number  // 0–100
   featuredArtists?: string[]
+  artEmoji?: string          // placeholder until real art is wired up
+  artGradient?: string       // CSS gradient string
 }
 
 // ─── CHART ENTRY ───────────────────────────────────────────────

@@ -34,9 +34,9 @@ function TrendingCard({
   const meta = PLATFORM_META[platform]
 
   return (
-    <div className="mp-card flex-1 min-w-[260px]">
+    <div className="mp-card flex-1 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <span className="text-[15px]">{meta.icon}</span>
           <h3 className="text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
@@ -52,7 +52,7 @@ function TrendingCard({
           <div
             key={item.id}
             className={cn(
-              'relative flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--bg3)] overflow-hidden animate-fade-up',
+              'relative flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 transition-colors hover:bg-[var(--bg3)] overflow-hidden animate-fade-up',
               `delay-${i + 1}`,
             )}
           >
@@ -74,7 +74,7 @@ function TrendingCard({
 
             {/* Art emoji placeholder */}
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-[16px]"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-[14px] sm:text-[16px]"
               style={{
                 background: item.artGradient ?? 'var(--bg3)',
               }}
@@ -84,10 +84,10 @@ function TrendingCard({
 
             {/* Song info */}
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold text-[var(--text)] truncate">
+              <p className="text-[11px] sm:text-[12px] font-semibold text-[var(--text)] truncate">
                 {item.songTitle}
               </p>
-              <p className="text-[10px] text-[var(--text3)] truncate">
+              <p className="text-[9px] sm:text-[10px] text-[var(--text3)] truncate">
                 {item.artistName}
               </p>
             </div>
@@ -124,16 +124,10 @@ function TrendingCard({
 
 export function TrendingRow({ tiktok, twitter, youtube }: TrendingRowProps) {
   return (
-    <div className="flex gap-6 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin">
-      <div className="snap-start">
-        <TrendingCard items={tiktok} platform="tiktok" />
-      </div>
-      <div className="snap-start">
-        <TrendingCard items={twitter} platform="twitter" />
-      </div>
-      <div className="snap-start">
-        <TrendingCard items={youtube} platform="youtube" />
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <TrendingCard items={tiktok} platform="tiktok" />
+      <TrendingCard items={twitter} platform="twitter" />
+      <TrendingCard items={youtube} platform="youtube" />
     </div>
   )
 }

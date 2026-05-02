@@ -8,18 +8,9 @@ export const metadata: Metadata = {
     'Real-time global music charts — Spotify Daily Top 200, Apple Music Top 100, YouTube Music, Shazam, and Billboard. Updated every hour.',
 }
 
-interface SearchParams {
-  platform?: string
-  region?: string
-}
-
-export default async function ChartsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams
-}) {
-  const platform = (searchParams.platform as 'spotify' | 'apple' | 'youtube') ?? 'spotify'
-  const region   = (searchParams.region as any) ?? 'global'
+export default async function ChartsPage() {
+  const platform = 'spotify' as const
+  const region = 'global' as const
 
   const [entries, countryCharts] = await Promise.all([
     getChartEntries(platform, region, 50),

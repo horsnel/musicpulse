@@ -29,26 +29,26 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
         }}
       />
 
-      <div className="max-w-[1200px] mx-auto px-6 py-16 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 py-10 sm:py-16 relative z-10">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
           {/* #1 Song — Hero Card */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2.5 mb-4">
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <PlayingBars />
-              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--green)]">
+              <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--green)]">
                 #1 on Spotify Global
               </span>
             </div>
 
-            <h1 className="text-[clamp(2rem,5vw,3.2rem)] font-black tracking-[-0.04em] leading-[1.1] text-[var(--text)] mb-2">
+            <h1 className="text-[clamp(1.6rem,5vw,3.2rem)] font-black tracking-[-0.04em] leading-[1.1] text-[var(--text)] mb-2">
               {topSong.song.title}
             </h1>
 
-            <p className="text-[18px] font-semibold text-[var(--text2)] mb-5">
+            <p className="text-[16px] sm:text-[18px] font-semibold text-[var(--text2)] mb-4 sm:mb-5">
               {topSong.song.artistName}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-5 sm:mb-6">
               {topSong.streams != null && (
                 <Badge variant="green">
                   {formatCount(topSong.streams)} streams
@@ -68,7 +68,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                 {topSong.song.genres.map((genre) => (
                   <span
                     key={genre}
-                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[var(--bg3)] border border-[var(--border)] text-[var(--text3)]"
+                    className="text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[var(--bg3)] border border-[var(--border)] text-[var(--text3)]"
                   >
                     {genre}
                   </span>
@@ -80,8 +80,8 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
           {/* Top 5 List */}
           <div className="w-full lg:w-[380px] flex-shrink-0">
             <div className="mp-card">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-                <h3 className="text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border)]">
+                <h3 className="text-[13px] sm:text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
                   Spotify Top 5
                 </h3>
                 <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--text3)]">
@@ -93,14 +93,14 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                   <div
                     key={entry.id}
                     className={cn(
-                      'flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-[var(--bg3)] animate-fade-up',
+                      'flex items-center gap-3 sm:gap-3.5 px-4 sm:px-5 py-3 sm:py-3.5 transition-colors hover:bg-[var(--bg3)] animate-fade-up',
                       `delay-${i + 1}`,
                     )}
                   >
                     {/* Rank */}
                     <span
                       className={cn(
-                        'text-[18px] font-black tracking-[-0.03em] w-6 text-center flex-shrink-0',
+                        'text-[16px] sm:text-[18px] font-black tracking-[-0.03em] w-6 text-center flex-shrink-0',
                         RANK_COLORS[entry.position] ?? 'text-[var(--text3)]',
                       )}
                     >
@@ -109,10 +109,10 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
 
                     {/* Song info */}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-[var(--text)] truncate">
+                      <p className="text-[12px] sm:text-[13px] font-semibold text-[var(--text)] truncate">
                         {entry.song.title}
                       </p>
-                      <p className="text-[11px] text-[var(--text3)] truncate">
+                      <p className="text-[10px] sm:text-[11px] text-[var(--text3)] truncate">
                         {entry.song.artistName}
                       </p>
                     </div>
@@ -121,7 +121,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                     <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
                       <span
                         className={cn(
-                          'text-[11px] font-bold',
+                          'text-[10px] sm:text-[11px] font-bold',
                           entry.positionChange > 0
                             ? 'text-[var(--green)]'
                             : entry.positionChange < 0
@@ -132,7 +132,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                         {formatRankChange(entry.positionChange, entry.isNewEntry)}
                       </span>
                       {entry.streams != null && (
-                        <span className="text-[10px] text-[var(--text3)]">
+                        <span className="text-[9px] sm:text-[10px] text-[var(--text3)]">
                           {formatCount(entry.streams)}
                         </span>
                       )}

@@ -36,6 +36,22 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── MOBILE OPTIMIZATIONS ── */
+@media (max-width: 640px) {
+  .mp-card { border-radius: 12px; }
+  .ambient-blob { filter: blur(100px); opacity: 0.5; }
+}
+
+/* Hide scrollbar on horizontal scroll containers */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Touch-friendly tap targets on mobile */
+@media (max-width: 768px) {
+  button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ── SCROLLBAR ── */
@@ -108,8 +124,12 @@ body {
 .mp-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.mp-card:hover {
+  border-color: var(--border2);
 }
 
 /* ── LIVE GRADIENT BAR ── */

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -14,10 +15,11 @@ const NAV_LINKS = [
 
 export function Nav() {
   const pathname = usePathname()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
     <nav className="sticky top-0 z-50 nav-glass border-b border-[var(--border)]">
-      <div className="max-w-[1280px] mx-auto px-7 flex items-center h-16 gap-4">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 flex items-center h-16 gap-4">
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 mr-auto text-decoration-none">
@@ -29,7 +31,7 @@ export function Nav() {
           </span>
         </Link>
 
-        {/* Links */}
+        {/* Desktop Links */}
         <ul className="hidden md:flex items-center gap-0.5 list-none">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== '/' && pathname.startsWith(href))
@@ -53,14 +55,53 @@ export function Nav() {
         </ul>
 
         {/* Search */}
-        <button className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-[10px] px-3.5 py-2 cursor-pointer transition-all hover:border-[var(--border2)]">
+        <button className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-[10px] px-3 sm:px-3.5 py-2 cursor-pointer transition-all hover:border-[var(--border2)]">
           <SearchIcon />
           <span className="text-[13px] text-[var(--text3)] font-medium hidden sm:block">Search…</span>
           <kbd className="hidden sm:block text-[10px] bg-[var(--bg)] border border-[var(--border)] px-[5px] py-[2px] rounded font-mono text-[var(--text3)]">
             ⌘K
           </kbd>
         </button>
+
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--bg3)] border border-[var(--border)] cursor-pointer transition-all hover:border-[var(--border2)]"
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
+        </button>
       </div>
+
+      {/* Mobile menu overlay */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-[var(--border)] bg-[rgba(8,9,13,0.98)] backdrop-blur-xl">
+          <div className="px-4 py-3">
+            <ul className="list-none flex flex-col gap-1">
+              {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 text-[15px] font-semibold px-4 py-3 rounded-xl transition-all duration-150 no-underline',
+                        active
+                          ? 'bg-[var(--bg3)] text-[var(--text)]'
+                          : 'text-[var(--text2)] hover:bg-[var(--bg3)] hover:text-[var(--text)]',
+                      )}
+                    >
+                      <Icon />
+                      {label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }
@@ -94,4 +135,21 @@ function ReleasesIcon() {
 }
 function SearchIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#545670" strokeWidth="1.4" fill="none"/><line x1="10.5" y1="10.5" x2="13.5" y2="13.5" stroke="#545670" strokeWidth="1.4" strokeLinecap="round"/></svg>
+}
+function HamburgerIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <line x1="3" y1="5" x2="15" y2="5" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="3" y1="9" x2="15" y2="9" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="3" y1="13" x2="15" y2="13" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <line x1="4" y1="4" x2="14" y2="14" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="14" y1="4" x2="4" y2="14" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
 }

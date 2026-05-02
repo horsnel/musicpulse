@@ -143,11 +143,11 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, icon, action, iconBg }: SectionHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-5">
-      <div className="flex items-center gap-2.5 text-[22px] font-extrabold tracking-[-0.03em]">
+    <div className="flex items-center justify-between mb-4 sm:mb-5">
+      <div className="flex items-center gap-2 sm:gap-2.5 text-[18px] sm:text-[22px] font-extrabold tracking-[-0.03em]">
         {icon && (
           <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-[8px] sm:rounded-[10px] flex items-center justify-center"
             style={{ background: iconBg }}
           >
             {icon}
@@ -158,7 +158,7 @@ export function SectionHeader({ title, icon, action, iconBg }: SectionHeaderProp
       {action && (
         <a
           href={action.href}
-          className="flex items-center gap-1 text-[13px] font-semibold text-[var(--text3)] no-underline px-3.5 py-[7px] border border-[var(--border)] rounded-lg transition-all hover:border-[var(--border2)] hover:text-[var(--text2)]"
+          className="flex items-center gap-1 text-[11px] sm:text-[13px] font-semibold text-[var(--text3)] no-underline px-2.5 sm:px-3.5 py-1.5 sm:py-[7px] border border-[var(--border)] rounded-lg transition-all hover:border-[var(--border2)] hover:text-[var(--text2)]"
         >
           {action.label}
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

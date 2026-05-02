@@ -22,7 +22,7 @@ export function ArtistsRow({ artists }: ArtistsRowProps) {
   if (artists.length === 0) return null
 
   return (
-    <div className="flex gap-5 overflow-x-auto pb-3 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5 sm:gap-6">
       {artists.map((artist, i) => {
         const gradient = AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]
         const initials = artist.name
@@ -38,15 +38,15 @@ export function ArtistsRow({ artists }: ArtistsRowProps) {
             key={artist.id}
             href={`/artists/${artist.slug}`}
             className={cn(
-              'snap-start flex-shrink-0 w-[150px] group',
+              'group text-center',
               'animate-fade-up',
               `delay-${(i % 5) + 1}`,
             )}
           >
             {/* Avatar */}
-            <div className="relative mb-3">
+            <div className="relative mb-3 inline-block">
               <div
-                className="w-[150px] h-[150px] rounded-full flex items-center justify-center text-[32px] font-extrabold text-white/90 transition-transform duration-300 group-hover:scale-105"
+                className="w-[90px] h-[90px] sm:w-[140px] sm:h-[140px] rounded-full flex items-center justify-center text-[22px] sm:text-[30px] font-extrabold text-white/90 transition-transform duration-300 group-hover:scale-105 mx-auto"
                 style={{ background: gradient }}
               >
                 {initials}
@@ -54,7 +54,7 @@ export function ArtistsRow({ artists }: ArtistsRowProps) {
 
               {/* Verified badge */}
               {artist.verified && (
-                <div className="absolute bottom-1 right-3 w-6 h-6 rounded-full bg-[var(--blue)] flex items-center justify-center border-2 border-[var(--bg)]">
+                <div className="absolute bottom-1 right-4 w-6 h-6 rounded-full bg-[var(--blue)] flex items-center justify-center border-2 border-[var(--bg)]">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="#fff">
                     <path d="M4.5 8.3L2.2 6l1-1 1.3 1.3 3.3-3.3 1 1L4.5 8.3z" />
                   </svg>
@@ -63,10 +63,10 @@ export function ArtistsRow({ artists }: ArtistsRowProps) {
             </div>
 
             {/* Info */}
-            <p className="text-[13px] font-semibold text-[var(--text)] truncate text-center group-hover:text-[var(--green)] transition-colors">
+            <p className="text-[14px] font-semibold text-[var(--text)] truncate group-hover:text-[var(--green)] transition-colors">
               {artist.name}
             </p>
-            <p className="text-[11px] text-[var(--text3)] text-center mt-0.5">
+            <p className="text-[12px] text-[var(--text3)] mt-0.5">
               {formatCount(artist.monthlyListeners)} listeners
             </p>
 

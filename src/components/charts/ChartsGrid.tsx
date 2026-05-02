@@ -33,7 +33,7 @@ function ChartCard({
   return (
     <div className="mp-card flex-1 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <span className="text-[16px]">{accent.icon}</span>
           <h3 className="text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
@@ -52,7 +52,7 @@ function ChartCard({
           <div
             key={entry.id}
             className={cn(
-              'flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--bg3)] animate-fade-up',
+              'flex items-center gap-3 px-4 sm:px-5 py-3 transition-colors hover:bg-[var(--bg3)] animate-fade-up',
               `delay-${i + 1}`,
             )}
           >
@@ -105,7 +105,7 @@ function ChartCard({
 
 export function ChartsGrid({ spotifyEntries, appleEntries }: ChartsGridProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <ChartCard entries={spotifyEntries} platform="spotify" />
       <ChartCard entries={appleEntries} platform="apple" />
     </div>

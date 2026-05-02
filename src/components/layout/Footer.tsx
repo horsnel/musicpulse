@@ -6,7 +6,7 @@ const FOOTER_COLS = [
     links: [
       { label: 'Global Charts',       href: '/charts' },
       { label: 'New Releases',        href: '/new-releases' },
-      { label: 'Trending on TikTok',  href: '/trending?platform=tiktok' },
+      { label: 'Trending on TikTok',  href: '/trending' },
       { label: 'Top Artists',         href: '/artists' },
       { label: 'Browse Genres',       href: '/genres' },
       { label: 'Weekly Digest',       href: '/newsletter' },
@@ -15,11 +15,11 @@ const FOOTER_COLS = [
   {
     heading: 'Platforms',
     links: [
-      { label: 'Spotify Charts',      href: '/charts?platform=spotify' },
-      { label: 'Apple Music Top 100', href: '/charts?platform=apple' },
-      { label: 'YouTube Music',       href: '/charts?platform=youtube' },
-      { label: 'Billboard Hot 100',   href: '/charts?platform=billboard' },
-      { label: 'Country Charts',      href: '/charts/countries' },
+      { label: 'Spotify Charts',      href: '/charts' },
+      { label: 'Apple Music Top 100', href: '/charts' },
+      { label: 'YouTube Music',       href: '/charts' },
+      { label: 'Billboard Hot 100',   href: '/charts' },
+      { label: 'Country Charts',      href: '/charts' },
     ],
   },
   {
@@ -37,35 +37,35 @@ const FOOTER_COLS = [
 
 export function Footer() {
   return (
-    <footer className="relative z-10 bg-[var(--bg2)] border-t border-[var(--border)] pt-[52px] pb-8">
-      <div className="max-w-[1280px] mx-auto px-7">
+    <footer className="relative z-10 bg-[var(--bg2)] border-t border-[var(--border)] pt-10 sm:pt-[52px] pb-8">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7">
 
         {/* Newsletter strip */}
-        <div className="flex items-center gap-8 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-8 py-7 mb-12 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-8 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-5 sm:px-8 py-5 sm:py-7 mb-8 sm:mb-12">
           <div className="flex-1">
-            <div className="text-[17px] font-extrabold tracking-[-0.03em] mb-1">
+            <div className="text-[15px] sm:text-[17px] font-extrabold tracking-[-0.03em] mb-1">
               Weekly Charts Digest
             </div>
-            <div className="text-[13px] text-[var(--text3)] font-medium">
+            <div className="text-[12px] sm:text-[13px] text-[var(--text3)] font-medium">
               Top 10 songs, biggest movers &amp; new releases every Friday.
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
             <input
               type="email"
               placeholder="your@email.com"
-              className="bg-[var(--bg2)] border border-[var(--border2)] text-[var(--text)] text-[13.5px] font-medium px-4 py-[11px] rounded-[10px] outline-none w-[220px] focus:border-[var(--green)] transition-colors placeholder:text-[var(--text3)]"
+              className="bg-[var(--bg2)] border border-[var(--border2)] text-[var(--text)] text-[13px] sm:text-[13.5px] font-medium px-3.5 sm:px-4 py-[11px] rounded-[10px] outline-none flex-1 sm:w-[220px] focus:border-[var(--green)] transition-colors placeholder:text-[var(--text3)]"
             />
-            <button className="flex items-center gap-2 bg-[var(--green)] text-black text-[14px] font-bold px-[22px] py-[11px] rounded-xl hover:bg-[#1ed760] transition-all whitespace-nowrap">
-              Subscribe Free
+            <button className="flex items-center gap-2 bg-[var(--green)] text-black text-[13px] sm:text-[14px] font-bold px-4 sm:px-[22px] py-[11px] rounded-xl hover:bg-[#1ed760] transition-all whitespace-nowrap">
+              Subscribe
             </button>
           </div>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-[260px_1fr_1fr_1fr] gap-12 mb-10">
-          {/* Brand */}
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-[260px_1fr_1fr_1fr] gap-8 sm:gap-10 mb-8 sm:mb-10">
+          {/* Brand - spans full width on mobile */}
+          <div className="col-span-2 sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-3.5 no-underline">
               <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-[#1DB954] to-[#0d8c3d] flex items-center justify-center flex-shrink-0">
                 <WaveformIcon />
@@ -74,8 +74,8 @@ export function Footer() {
                 Music<span className="text-[var(--green)]">Pulse</span>
               </span>
             </Link>
-            <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-5">
-              The world's music data in one place. Charts, trends, releases, and artists — updated around the clock.
+            <p className="text-[12px] sm:text-[13px] text-[var(--text3)] leading-relaxed mb-5 max-w-[320px]">
+              The world&apos;s music data in one place. Charts, trends, releases, and artists — updated around the clock.
             </p>
             <div className="flex gap-2">
               {[TwitterIcon, InstagramIcon, TikTokIcon, RSSIcon].map((Icon, i) => (
@@ -88,15 +88,15 @@ export function Footer() {
 
           {FOOTER_COLS.map(col => (
             <div key={col.heading}>
-              <h4 className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] mb-3.5">
+              <h4 className="text-[10px] sm:text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] mb-3 sm:mb-3.5">
                 {col.heading}
               </h4>
-              <ul className="list-none flex flex-col gap-[9px]">
+              <ul className="list-none flex flex-col gap-2 sm:gap-[9px]">
                 {col.links.map(link => (
-                  <li key={link.href}>
+                  <li key={link.href + link.label}>
                     <Link
                       href={link.href}
-                      className="text-[13.5px] text-[var(--text2)] no-underline font-medium transition-colors hover:text-[var(--text)]"
+                      className="text-[12px] sm:text-[13.5px] text-[var(--text2)] no-underline font-medium transition-colors hover:text-[var(--text)]"
                     >
                       {link.label}
                     </Link>
@@ -108,20 +108,24 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between pt-[22px] border-t border-[var(--border)]">
-          <div className="text-[12.5px] text-[var(--text3)] font-medium">
-            © {new Date().getFullYear()}{' '}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-[22px] border-t border-[var(--border)]">
+          <div className="text-[11px] sm:text-[12.5px] text-[var(--text3)] font-medium text-center sm:text-left">
+            &copy; {new Date().getFullYear()}{' '}
             <span className="text-[var(--green)]">MusicPulse</span>.{' '}
             Data sourced from public APIs. Not affiliated with Spotify or Apple.
           </div>
-          <div className="flex gap-[18px]">
-            {['Privacy', 'Terms', 'Cookies', 'Sitemap'].map(label => (
+          <div className="flex gap-[18px] flex-wrap justify-center">
+            {[
+              { label: 'Privacy', href: '/privacy' },
+              { label: 'Terms', href: '/terms' },
+              { label: 'About', href: '/about' },
+            ].map(link => (
               <Link
-                key={label}
-                href={`/${label.toLowerCase()}`}
-                className="text-[12.5px] text-[var(--text3)] no-underline font-medium transition-colors hover:text-[var(--text2)]"
+                key={link.label}
+                href={link.href}
+                className="text-[11px] sm:text-[12.5px] text-[var(--text3)] no-underline font-medium transition-colors hover:text-[var(--text2)]"
               >
-                {label}
+                {link.label}
               </Link>
             ))}
           </div>

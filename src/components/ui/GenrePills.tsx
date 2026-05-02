@@ -25,12 +25,12 @@ const GENRES: GenrePill[] = [
 
 export function GenrePills() {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
       {GENRES.map((genre, i) => (
         <button
           key={genre.label}
           className={cn(
-            'group flex items-center gap-2.5 pl-1 pr-4 py-1 rounded-full',
+            'group flex items-center gap-2 sm:gap-2.5 pl-1 pr-3 sm:pr-4 py-0.5 sm:py-1 rounded-full',
             'border border-[var(--border)] bg-[var(--bg2)]',
             'transition-all duration-200 hover:border-[var(--border2)] hover:-translate-y-0.5 hover:shadow-lg',
             'cursor-pointer animate-fade-up',
@@ -39,12 +39,12 @@ export function GenrePills() {
         >
           {/* Emoji circle */}
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[14px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[12px] sm:text-[14px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
             style={{ background: genre.gradient }}
           >
             {genre.emoji}
           </div>
-          <span className="text-[13px] font-semibold text-[var(--text2)] group-hover:text-[var(--text)] transition-colors">
+          <span className="text-[11px] sm:text-[13px] font-semibold text-[var(--text2)] group-hover:text-[var(--text)] transition-colors">
             {genre.label}
           </span>
         </button>

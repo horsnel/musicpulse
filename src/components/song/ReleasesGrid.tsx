@@ -31,7 +31,7 @@ export function ReleasesGrid({ albums }: ReleasesGridProps) {
   if (albums.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-5">
       {albums.map((album, i) => {
         const typeStyle = TYPE_COLORS[album.type] ?? TYPE_COLORS.album
         const gradient = TYPE_GRADIENTS[i % TYPE_GRADIENTS.length]
@@ -79,8 +79,8 @@ export function ReleasesGrid({ albums }: ReleasesGridProps) {
             </div>
 
             {/* Info */}
-            <div className="p-3.5">
-              <p className="text-[13px] font-semibold text-[var(--text)] truncate">
+            <div className="p-2.5 sm:p-3.5">
+              <p className="text-[12px] sm:text-[13px] font-semibold text-[var(--text)] truncate">
                 {album.title}
               </p>
               <p className="text-[11px] text-[var(--text3)] truncate mt-0.5">

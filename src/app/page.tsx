@@ -32,11 +32,9 @@ export default async function HomePage() {
       {/* Hero */}
       <HeroSection spotifyTop5={spotifyChart.slice(0, 5)} />
 
-      <div className="max-w-[1200px] mx-auto px-6">
-        <div className="h-px bg-[var(--border)]" />
-
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7">
         {/* Charts */}
-        <section className="py-16">
+        <section className="py-10 sm:py-20">
           <SectionHeader
             title="Charts"
             icon={<ChartsIcon />}
@@ -46,10 +44,8 @@ export default async function HomePage() {
           <ChartsGrid spotifyEntries={spotifyChart} appleEntries={appleChart} />
         </section>
 
-        <div className="h-px bg-[var(--border)]" />
-
         {/* Trending */}
-        <section className="py-16">
+        <section className="py-10 sm:py-20">
           <SectionHeader
             title="Trending on Social"
             icon={<TrendingIcon />}
@@ -63,10 +59,8 @@ export default async function HomePage() {
           />
         </section>
 
-        <div className="h-px bg-[var(--border)]" />
-
         {/* New Releases */}
-        <section className="py-16">
+        <section className="py-10 sm:py-20">
           <SectionHeader
             title="New Releases"
             icon={<ReleasesIcon />}
@@ -76,18 +70,14 @@ export default async function HomePage() {
           <ReleasesGrid albums={newReleases} />
         </section>
 
-        <div className="h-px bg-[var(--border)]" />
-
         {/* Genres */}
-        <section className="py-16">
+        <section className="py-10 sm:py-20">
           <SectionHeader title="Browse by Genre" icon={<GenreIcon />} iconBg="var(--gold-dim)" />
           <GenrePills />
         </section>
 
-        <div className="h-px bg-[var(--border)]" />
-
         {/* Top Artists */}
-        <section className="py-16">
+        <section className="py-10 sm:py-20">
           <SectionHeader
             title="Top Artists"
             icon={<ArtistIcon />}
