@@ -12,7 +12,7 @@ interface TrendingRowProps {
 
 const PLATFORM_META: Record<TrendingPlatform, { label: string; icon: string; color: string; dim: string }> = {
   tiktok:  { label: 'TikTok',      icon: '🎵', color: 'var(--pink)',  dim: 'var(--pink-dim)' },
-  twitter: { label: 'X / Twitter',  icon: '𝕏',  color: 'var(--blue)',  dim: 'var(--blue-dim)' },
+  twitter: { label: 'X',           icon: '𝕏',  color: '#e0e0e0',     dim: 'rgba(200,200,200,0.1)' },
   youtube: { label: 'YouTube',      icon: '▶️', color: 'var(--pink)',  dim: 'var(--pink-dim)' },
   spotify: { label: 'Spotify',     icon: '🎶', color: 'var(--green)', dim: 'var(--green-dim)' },
 }
@@ -82,26 +82,28 @@ function TrendingCard({
               {item.artEmoji ?? '🎶'}
             </div>
 
-            {/* Song info */}
+            {/* Song info + badge (inline, no overlap) */}
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] sm:text-[12px] font-semibold text-[var(--text)] truncate">
-                {item.songTitle}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[11px] sm:text-[12px] font-semibold text-[var(--text)] truncate">
+                  {item.songTitle}
+                </p>
+                {item.badge && (
+                  <Badge variant={BADGE_VARIANT_MAP[item.badge] ?? 'ghost'} className="!px-1.5 !py-0 !text-[7px] sm:!text-[8px] flex-shrink-0">
+                    {item.badge.toUpperCase()}
+                  </Badge>
+                )}
+              </div>
               <p className="text-[9px] sm:text-[10px] text-[var(--text3)] truncate">
                 {item.artistName}
               </p>
             </div>
 
-            {/* Metric + badge */}
-            <div className="flex flex-col items-end flex-shrink-0 gap-1">
+            {/* Metric — with left padding to separate from badges */}
+            <div className="flex flex-col items-end flex-shrink-0 gap-0.5 pl-2">
               <span className="text-[11px] font-bold text-[var(--text2)]">
                 {formatCount(item.metric)} {item.metricUnit}
               </span>
-              {item.badge && (
-                <Badge variant={BADGE_VARIANT_MAP[item.badge] ?? 'ghost'} className="!px-2 !py-0.5 !text-[9px]">
-                  {item.badge.toUpperCase()}
-                </Badge>
-              )}
             </div>
 
             {/* Surge bar */}

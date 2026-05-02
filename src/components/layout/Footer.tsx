@@ -6,7 +6,7 @@ const FOOTER_COLS = [
     links: [
       { label: 'Global Charts',       href: '/charts' },
       { label: 'New Releases',        href: '/new-releases' },
-      { label: 'Trending on TikTok',  href: '/trending' },
+      { label: 'Trending on TikTok',  href: '/trending/tiktok' },
       { label: 'Top Artists',         href: '/artists' },
       { label: 'Browse Genres',       href: '/genres' },
       { label: 'Weekly Digest',       href: '/newsletter' },
@@ -15,11 +15,11 @@ const FOOTER_COLS = [
   {
     heading: 'Platforms',
     links: [
-      { label: 'Spotify Charts',      href: '/charts' },
-      { label: 'Apple Music Top 100', href: '/charts' },
-      { label: 'YouTube Music',       href: '/charts' },
-      { label: 'Billboard Hot 100',   href: '/charts' },
-      { label: 'Country Charts',      href: '/charts' },
+      { label: 'Spotify Charts',      href: '/charts/spotify' },
+      { label: 'Apple Music Top 100', href: '/charts/apple' },
+      { label: 'YouTube Music',       href: '/charts/youtube' },
+      { label: 'Billboard Hot 100',   href: '/charts/billboard' },
+      { label: 'Country Charts',      href: '/charts/countries' },
     ],
   },
   {

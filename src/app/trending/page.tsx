@@ -28,6 +28,7 @@ export default async function TrendingPage() {
       tiktok={tiktok}
       twitter={twitter}
       youtube={youtube}
+      spotify={spotify}
       crossPlatform={crossPlatform}
       velocity={velocity}
       heatmap={heatmap}
