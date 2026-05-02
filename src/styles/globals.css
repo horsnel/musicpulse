@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── DESIGN TOKENS ── */
+:root {
+  --bg:       #08090d;
+  --bg2:      #0e0f16;
+  --bg3:      #13141e;
+  --bg4:      #181928;
+  --border:   #1c1e2e;
+  --border2:  #252840;
+  --text:     #f0f0f8;
+  --text2:    #9899b8;
+  --text3:    #545670;
+  --green:    #1DB954;
+  --green-dim:rgba(29,185,84,0.12);
+  --pink:     #ff2d6b;
+  --pink-dim: rgba(255,45,107,0.1);
+  --blue:     #4361ff;
+  --blue-dim: rgba(67,97,255,0.12);
+  --gold:     #ffb830;
+  --gold-dim: rgba(255,184,48,0.1);
+  --purple:   #b06cff;
+  --purple-dim:rgba(176,108,255,0.1);
+}
+
+/* ── BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ── SHARED ANIMATIONS ── */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+@keyframes barBounce {
+  0%, 100% { transform: scaleY(0.3); }
+  50%       { transform: scaleY(1); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gradShift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+@keyframes vinylSpin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to   { transform: translateY(-50%) rotate(360deg); }
+}
+@keyframes ringRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes abFloat {
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  33%       { transform: scale(1.1) translate(25px, -20px); }
+  66%       { transform: scale(0.95) translate(-15px, 30px); }
+}
+
+/* ── UTILITY CLASSES ── */
+.animate-fade-up   { animation: fadeUp 0.45s ease both; }
+.delay-1 { animation-delay: 0.04s; }
+.delay-2 { animation-delay: 0.10s; }
+.delay-3 { animation-delay: 0.16s; }
+.delay-4 { animation-delay: 0.22s; }
+.delay-5 { animation-delay: 0.28s; }
+
+.pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+.bar-bounce { animation: barBounce 0.8s ease-in-out infinite; }
+.ring-rotate { animation: ringRotate 8s linear infinite; }
+.vinyl-spin { animation: vinylSpin 8s linear infinite; }
+
+/* ── AMBIENT BLOBS ── */
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  pointer-events: none;
+  animation: abFloat 22s ease-in-out infinite;
+}
+
+/* ── NAV GLASSMORPHISM ── */
+.nav-glass {
+  background: rgba(8, 9, 13, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── CARD BASE ── */
+.mp-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ── LIVE GRADIENT BAR ── */
+.live-gradient-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--pink), #ff6b1a, var(--gold), var(--green), var(--blue), var(--pink));
+  background-size: 400% 100%;
+  animation: gradShift 8s linear infinite;
+}
+
+/* ── PLAYING BARS ── */
+.playing-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+}
+.playing-bars span {
+  display: block;
+  width: 2.5px;
+  border-radius: 2px;
+  background: var(--green);
+  animation: barBounce 0.8s ease-in-out infinite;
+}
+.playing-bars span:nth-child(1) { height: 6px;  animation-delay: 0s;    }
+.playing-bars span:nth-child(2) { height: 13px; animation-delay: 0.15s; }
+.playing-bars span:nth-child(3) { height: 9px;  animation-delay: 0.30s; }
+.playing-bars span:nth-child(4) { height: 13px; animation-delay: 0.10s; }
+
+/* ── RANK COLORS ── */
+.rank-gold   { color: var(--gold); }
+.rank-silver { color: #aab0c8; }
+.rank-bronze { color: #cd7f32; }
+
+/* ── SURGE BAR (trending rows) ── */
+.surge-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  border-radius: 0;
+  transition: width 0.5s ease;
+}
