@@ -19,10 +19,13 @@ import { scrapeLastfm } from './lastfm'
 import { scrapeGenius } from './genius'
 import { scrapeTheAudioDB } from './theaudiodb'
 import { scrapeSetlistFm } from './setlistfm'
+import { scrapeReddit } from './reddit'
+import { scrapeITunes } from './itunes'
+import { scrapeMusicBrainz } from './musicbrainz'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
 import { computeVelocity } from '../normalizers/velocity'
 import { computeHeatmap } from '../normalizers/heatmap'
-import { writeKV } from '../store'
+import { writeKVMeta } from '../store'
 
 export async function scrapeAll(env: Env): Promise<void> {
   console.log('[scrape] Starting full scrape...')
@@ -37,8 +40,13 @@ export async function scrapeAll(env: Env): Promise<void> {
 
     // Trending (every 2 hours)
     scrapeTikTok(env),
+    scrapeReddit(env),      // Generates twitter trending data
 
-    // Artist/metadata enrichment
+    // Enrichment (no key needed)
+    scrapeITunes(env),
+    scrapeMusicBrainz(env),
+
+    // Artist/metadata enrichment (key-gated)
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
     scrapeGenius(env),
@@ -46,7 +54,11 @@ export async function scrapeAll(env: Env): Promise<void> {
   ])
 
   // Log results
-  const names = ['spotify-charts', 'apple-rss', 'deezer', 'youtube', 'tiktok', 'lastfm', 'theaudiodb', 'genius', 'setlistfm']
+  const names = [
+    'spotify-charts', 'apple-rss', 'deezer', 'youtube',
+    'tiktok', 'reddit', 'itunes', 'musicbrainz',
+    'lastfm', 'theaudiodb', 'genius', 'setlistfm',
+  ]
   results.forEach((r, i) => {
     if (r.status === 'rejected') console.error(`[scrape] ${names[i]} failed:`, r.reason)
   })
@@ -60,7 +72,7 @@ export async function scrapeAll(env: Env): Promise<void> {
 
   // Update scrape metadata
   const elapsed = Date.now() - start
-  await writeKV(env, 'scrape:meta', {
+  await writeKVMeta(env, 'scrape:meta', {
     lastRun: new Date().toISOString(),
     elapsedMs: elapsed,
     sources: names.map((name, i) => ({
@@ -87,6 +99,9 @@ export async function scrapeTrending(env: Env): Promise<void> {
   console.log('[scrape] Starting trending scrape...')
   await Promise.allSettled([
     scrapeTikTok(env),
+    scrapeReddit(env),
+    scrapeITunes(env),
+    scrapeMusicBrainz(env),
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
     scrapeSetlistFm(env),

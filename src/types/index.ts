@@ -110,6 +110,7 @@ export interface TrendingItem {
   artistName: string
   artEmoji?: string          // placeholder until real art is wired up
   artGradient?: string       // CSS gradient string
+  albumCoverUrl?: string     // real album cover from API
   metric: number             // uses / tweets / views / streams
   metricUnit: string         // "uses" | "tweets" | "views" | "streams"
   badge: TrendBadge

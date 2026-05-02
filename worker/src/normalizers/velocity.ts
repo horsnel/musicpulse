@@ -32,7 +32,7 @@ export async function computeVelocity(env: Env): Promise<void> {
     const allTrending: TrendingEntry[] = []
 
     for (const platform of PLATFORMS) {
-      const data = await readKV<TrendingEntry[]>(env, `trending:${platform}`)
+      const data = await readKV<TrendingEntry>(env, `trending:${platform}`)
       if (data?.items) {
         allTrending.push(...data.items)
       }
@@ -84,7 +84,7 @@ export async function computeVelocity(env: Env): Promise<void> {
           songTitle: song.songTitle,
           artistName: song.artistName,
           artEmoji: getArtEmoji(),
-          artGradient: getArtGradient(0),
+          artGradient: '',
           growthPercent,
           sparkline,
           context,

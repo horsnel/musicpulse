@@ -62,13 +62,13 @@ export async function scrapeSetlistFm(env: Env): Promise<void> {
 
   try {
     // Get top artists from KV (enriched by Deezer/Last.fm)
-    const topArtistsData = await readKV<Array<{
+    const topArtistsData = await readKV<{
       name: string
       slug: string
       id: string
-    }>>(env, 'artists:top')
+    }>(env, 'artists:top')
 
-    const artistNames = topArtistsData?.items?.map(a => a.name) ?? [
+    const artistNames = topArtistsData?.items?.map((a: { name: string; slug: string; id: string }) => a.name) ?? [
       'Kendrick Lamar', 'Billie Eilish', 'Taylor Swift',
       'Drake', 'Bad Bunny', 'The Weeknd', 'Burna Boy', 'Davido',
     ]

@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { TrendingItem, CrossPlatformScore, VelocityItem, GenreHeatRow } from '@/types'
 import { formatCount, cn } from '@/lib/utils'
+
+const API_URL = 'https://musicpulse-api.odehebuka48.workers.dev'
+const API_TIMEOUT = 10000
 
 const HEAT_BG = [
   'bg-[var(--bg3)]',
@@ -57,9 +60,79 @@ function platTextColor(platform: string) {
   return platform === 'twitter' ? '#e0e0e0' : PLAT_META[platform]?.color ?? '#fff'
 }
 
-export function TrendingPageClient({ tiktok, twitter, youtube, spotify, apple, crossPlatform, velocity, heatmap }: Props) {
+// ── Client-side API fetch ─────────────────────────────────────
+async function fetchFromApi<T>(path: string, fallback: T): Promise<T> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), API_TIMEOUT)
+    const res = await fetch(`${API_URL}${path}`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
+    })
+    clearTimeout(timer)
+    if (!res.ok) return fallback
+    const json = await res.json()
+    if (json.data && Array.isArray(json.data) && json.data.length > 0) return json.data
+    if (json.data && !Array.isArray(json.data) && json.data) return json.data
+    return fallback
+  } catch {
+    return fallback
+  }
+}
+
+export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
   const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple'>('all')
   const [timeRange, setTimeRange] = useState('Now')
+  const [liveData, setLiveData] = useState(false)
+
+  // Live data state
+  const [tiktok, setTiktok] = useState(initTiktok)
+  const [twitter, setTwitter] = useState(initTwitter)
+  const [youtube, setYoutube] = useState(initYoutube)
+  const [spotify, setSpotify] = useState(initSpotify)
+  const [apple, setApple] = useState(initApple)
+  const [crossPlatform, setCrossPlatform] = useState(initCP)
+  const [velocity, setVelocity] = useState(initVel)
+  const [heatmap, setHeatmap] = useState(initHeat)
+  const [lastUpdated, setLastUpdated] = useState<string>('')
+
+  // Fetch live data on mount
+  useEffect(() => {
+    async function loadLive() {
+      try {
+        const [
+          tTiktok, tTwitter, tYoutube, tSpotify, tApple,
+          tCP, tVel, tHeat,
+        ] = await Promise.all([
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=tiktok&limit=8', initTiktok),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=twitter&limit=8', initTwitter),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=youtube&limit=8', initYoutube),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=spotify&limit=8', initSpotify),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=apple&limit=8', initApple),
+          fetchFromApi<CrossPlatformScore[]>('/api/trending/cross-platform?limit=5', initCP),
+          fetchFromApi<VelocityItem[]>('/api/trending/velocity?limit=5', initVel),
+          fetchFromApi<GenreHeatRow[]>('/api/trending/heatmap', initHeat),
+        ])
+
+        setTiktok(tTiktok)
+        setTwitter(tTwitter)
+        setYoutube(tYoutube)
+        setSpotify(tSpotify)
+        setApple(tApple)
+        setCrossPlatform(tCP)
+        setVelocity(tVel)
+        setHeatmap(tHeat)
+        setLiveData(true)
+        setLastUpdated(new Date().toISOString())
+      } catch {
+        // Fall back to static data
+      }
+    }
+    loadLive()
+    // Refresh every 5 minutes
+    const interval = setInterval(loadLive, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
@@ -76,6 +149,11 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, apple, c
 
   const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2)]
 
+  // Format the last updated time
+  const updatedLabel = lastUpdated
+    ? `Updated ${Math.round((Date.now() - new Date(lastUpdated).getTime()) / 60000)}m ago`
+    : 'Loading...'
+
   return (
     <div className="relative z-10">
 
@@ -86,8 +164,8 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, apple, c
       <div className="relative z-10 overflow-hidden border-b" style={{ background: 'rgba(255,45,107,0.06)', borderColor: 'rgba(255,45,107,0.12)' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-7 flex items-center h-[34px] sm:h-[38px]">
           <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black tracking-[0.18em] uppercase text-[#ff2d6b] pr-3 sm:pr-5 border-r border-[rgba(255,45,107,0.2)] flex-shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: '#ff2d6b' }} />
-            LIVE
+            <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: liveData ? '#1DB954' : '#ff2d6b' }} />
+            {liveData ? 'LIVE' : 'LOADING'}
           </div>
           <div className="flex-1 overflow-hidden pl-3 sm:pl-5">
             <div className="flex items-center gap-4 sm:gap-8 whitespace-nowrap" style={{ animation: 'ticker 30s linear infinite' }}>
@@ -120,11 +198,11 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, apple, c
             <div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black tracking-[0.1em] uppercase"
-                  style={{ background: 'rgba(255,45,107,0.1)', border: '1px solid rgba(255,45,107,0.25)', color: '#ff2d6b' }}>
-                  <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: '#ff2d6b' }} />
-                  LIVE NOW
+                  style={{ background: liveData ? 'rgba(29,185,84,0.1)' : 'rgba(255,45,107,0.1)', border: liveData ? '1px solid rgba(29,185,84,0.25)' : '1px solid rgba(255,45,107,0.25)', color: liveData ? '#1DB954' : '#ff2d6b' }}>
+                  <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: liveData ? '#1DB954' : '#ff2d6b' }} />
+                  {liveData ? 'LIVE DATA' : 'CONNECTING...'}
                 </span>
-                <span className="text-[10px] sm:text-[12px] font-medium text-[var(--text3)]">Updating every 2h · Apr 27, 2025</span>
+                <span className="text-[10px] sm:text-[12px] font-medium text-[var(--text3)]">{updatedLabel} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
               <h1 className="font-[Space_Grotesk,sans-serif] font-bold tracking-[-0.03em] leading-[0.95]"
                 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 'clamp(32px, 8vw, 72px)' }}>
@@ -355,10 +433,14 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
               </span>
             </div>
 
-            {/* Art */}
-            <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[17px] sm:text-[21px] flex-shrink-0 border border-[rgba(255,255,255,0.05)]"
-              style={{ background: item.artGradient ?? 'var(--bg3)' }}>
-              {item.artEmoji}
+            {/* Art — album cover if available, else gradient + emoji */}
+            <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[17px] sm:text-[21px] flex-shrink-0 border border-[rgba(255,255,255,0.05)] overflow-hidden"
+              style={{ background: item.albumCoverUrl ? 'var(--bg3)' : (item.artGradient ?? 'var(--bg3)') }}>
+              {item.albumCoverUrl ? (
+                <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                item.artEmoji
+              )}
             </div>
 
             {/* Info + Badge (inline, no overlap) */}

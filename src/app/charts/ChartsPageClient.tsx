@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ChartEntry, Platform, ChartRegion } from '@/types'
 import { formatCount, REGION_META } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+
+const API_URL = 'https://musicpulse-api.odehebuka48.workers.dev'
 
 const PLATFORMS: Array<{ id: Platform; label: string; color: string }> = [
   { id: 'spotify',   label: 'Spotify Daily Top 200', color: '#1DB954' },
@@ -22,15 +24,60 @@ interface Props {
   initialRegion: ChartRegion
 }
 
-export function ChartsPageClient({ initialEntries, countryCharts, initialPlatform, initialRegion }: Props) {
+export function ChartsPageClient({ initialEntries, countryCharts: initialCountryCharts, initialPlatform, initialRegion }: Props) {
   const [platform, setPlatform] = useState<Platform>(initialPlatform)
   const [region, setRegion] = useState<ChartRegion>(initialRegion)
   const [regionIdx, setRegionIdx] = useState(0)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [posRange, setPosRange] = useState('Top 50')
+  const [entries, setEntries] = useState<ChartEntry[]>(initialEntries)
+  const [countryCharts, setCountryCharts] = useState(initialCountryCharts)
+  const [loading, setLoading] = useState(false)
 
   const activePlatform = PLATFORMS.find(p => p.id === platform)!
   const regionMeta = REGION_META[region]
+
+  // Fetch live chart data when platform or region changes
+  useEffect(() => {
+    async function fetchCharts() {
+      setLoading(true)
+      try {
+        const res = await fetch(`${API_URL}/api/charts?platform=${platform}&region=${region}&limit=50`, {
+          headers: { 'Accept': 'application/json' },
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            setEntries(json.data)
+          }
+        }
+      } catch {
+        // Keep existing data
+      }
+      setLoading(false)
+    }
+    fetchCharts()
+  }, [platform, region])
+
+  // Fetch country charts on mount
+  useEffect(() => {
+    async function fetchCountries() {
+      try {
+        const res = await fetch(`${API_URL}/api/charts/countries`, {
+          headers: { 'Accept': 'application/json' },
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            setCountryCharts(json.data)
+          }
+        }
+      } catch {
+        // Keep existing data
+      }
+    }
+    fetchCountries()
+  }, [])
 
   const cycleRegion = () => {
     const next = (regionIdx + 1) % REGIONS.length
@@ -169,7 +216,7 @@ export function ChartsPageClient({ initialEntries, countryCharts, initialPlatfor
 
           {/* Desktop rows - hidden on mobile */}
           <div className="hidden md:block">
-            {initialEntries.map(entry => {
+            {entries.map(entry => {
               const isPlaying = playingId === entry.id
               return (
                 <div
@@ -204,10 +251,14 @@ export function ChartsPageClient({ initialEntries, countryCharts, initialPlatfor
                     </span>
                   </div>
                   <div
-                    className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] transition-transform mx-1"
-                    style={{ background: entry.song.artGradient ?? 'var(--bg3)' }}
+                    className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] transition-transform mx-1 overflow-hidden"
+                    style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : (entry.song.artGradient ?? 'var(--bg3)') }}
                   >
-                    {(entry.song as any).artEmoji ?? '🎵'}
+                    {entry.song.albumCoverUrl ? (
+                      <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      (entry.song as any).artEmoji ?? '🎵'
+                    )}
                   </div>
                   <div className="pl-3.5 min-w-0">
                     <div className={cn(
@@ -267,7 +318,7 @@ export function ChartsPageClient({ initialEntries, countryCharts, initialPlatfor
 
           {/* Mobile rows - simplified layout */}
           <div className="md:hidden">
-            {initialEntries.map(entry => {
+            {entries.map(entry => {
               const isPlaying = playingId === entry.id
               return (
                 <div
@@ -304,10 +355,14 @@ export function ChartsPageClient({ initialEntries, countryCharts, initialPlatfor
 
                   {/* Art */}
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0"
-                    style={{ background: entry.song.artGradient ?? 'var(--bg3)' }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0 overflow-hidden"
+                    style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : (entry.song.artGradient ?? 'var(--bg3)') }}
                   >
-                    {(entry.song as any).artEmoji ?? '🎵'}
+                    {entry.song.albumCoverUrl ? (
+                      <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      (entry.song as any).artEmoji ?? '🎵'
+                    )}
                   </div>
 
                   {/* Info */}

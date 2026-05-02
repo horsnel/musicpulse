@@ -34,7 +34,7 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
     const allTrending: TrendingEntry[] = []
 
     for (const platform of PLATFORMS) {
-      const data = await readKV<TrendingEntry[]>(env, `trending:${platform}`)
+      const data = await readKV<TrendingEntry>(env, `trending:${platform}`)
       if (data?.items) {
         allTrending.push(...data.items)
       }
@@ -77,7 +77,17 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
     }
 
     // Compute scores
-    const scores = Array.from(songMap.values())
+    interface CrossPlatformEntry {
+      songId: string
+      songTitle: string
+      artistName: string
+      artEmoji: string
+      artGradient: string
+      platforms: string[]
+      score: number
+    }
+
+    const scores: CrossPlatformEntry[] = Array.from(songMap.values())
       .map(song => {
         const platformWeight = (song.platforms.length / PLATFORMS.length) * 60
         const rankWeight = Math.max(0, (10 - song.bestRank)) * 3
@@ -87,15 +97,15 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
           songTitle: song.songTitle,
           artistName: song.artistName,
           artEmoji: getArtEmoji(),
-          artGradient: getArtGradient(scores.length),
-          platforms: song.platforms as any[],
+          artGradient: '',
+          platforms: song.platforms,
           score: Math.min(100, Math.round(platformWeight + rankWeight + surgeWeight)),
         }
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20)
 
-    // Fix: assign gradients based on final sort order
+    // Assign gradients based on final sort order
     scores.forEach((s, i) => {
       s.artGradient = getArtGradient(i)
     })

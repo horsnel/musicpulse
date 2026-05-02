@@ -17,7 +17,7 @@ import type {
   Platform, ChartRegion, TrendingPlatform,
 } from '@/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://musicpulse-api.odehebuka48.workers.dev'
 const API_TIMEOUT = 8000 // 8 second timeout for API calls
 
 // ─── API HELPER ────────────────────────────────────────────────

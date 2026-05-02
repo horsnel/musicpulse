@@ -18,7 +18,9 @@ export interface Env {
   // API keys (optional — scrapers skip gracefully if missing)
   YOUTUBE_API_KEY?: string
   LASTFM_API_KEY?: string
-  GENIUS_API_KEY?: string
+  GENIUS_API_KEY?: string       // Genius client access token (obtained via client credentials flow)
+  GENIUS_CLIENT_ID?: string     // Genius API client ID
+  GENIUS_CLIENT_SECRET?: string // Genius API client secret
   THEAUDIODB_API_KEY?: string
   SETLISTFM_API_KEY?: string
   MUSIXMATCH_API_KEY?: string
