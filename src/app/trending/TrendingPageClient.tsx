@@ -27,30 +27,54 @@ interface Props {
   twitter: TrendingItem[]
   youtube: TrendingItem[]
   spotify: TrendingItem[]
+  apple: TrendingItem[]
   crossPlatform: CrossPlatformScore[]
   velocity: VelocityItem[]
   heatmap: GenreHeatRow[]
 }
 
 const PLAT_META: Record<string, { label: string; sub: string; color: string; updated: string }> = {
-  tiktok:  { label: 'TikTok',        sub: 'Trending Sounds',    color: '#ff2d6b',  updated: '1h ago' },
-  twitter: { label: 'X',             sub: 'Music Topics',       color: '#000000',  updated: '3h ago' },
-  youtube: { label: 'YouTube Music', sub: 'Top Music Videos',   color: '#ff3333',  updated: '2h ago' },
-  spotify: { label: 'Spotify',       sub: 'Top Streaming',      color: '#1DB954',  updated: '45m ago' },
+  tiktok:  { label: 'TikTok',          sub: 'Trending Sounds',    color: '#ff2d6b',  updated: '1h ago' },
+  twitter: { label: 'X',               sub: 'Music Topics',       color: '#000000',  updated: '3h ago' },
+  youtube: { label: 'YouTube Music',   sub: 'Top Music Videos',   color: '#ff3333',  updated: '2h ago' },
+  spotify: { label: 'Spotify',         sub: 'Top Streaming',      color: '#1DB954',  updated: '45m ago' },
+  apple:   { label: 'Apple Music',     sub: 'Top Plays',          color: '#fc3c44',  updated: '1h ago' },
 }
 
-export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPlatform, velocity, heatmap }: Props) {
-  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify'>('all')
+// Helper to get platform color for rgba backgrounds
+function platRgb(platform: string) {
+  switch (platform) {
+    case 'tiktok':  return '255,45,107'
+    case 'twitter': return '200,200,200'
+    case 'youtube': return '255,51,51'
+    case 'spotify': return '29,185,84'
+    case 'apple':   return '252,60,68'
+    default:        return '255,255,255'
+  }
+}
+
+function platTextColor(platform: string) {
+  return platform === 'twitter' ? '#e0e0e0' : PLAT_META[platform]?.color ?? '#fff'
+}
+
+export function TrendingPageClient({ tiktok, twitter, youtube, spotify, apple, crossPlatform, velocity, heatmap }: Props) {
+  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple'>('all')
   const [timeRange, setTimeRange] = useState('Now')
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
-  const platformColumns = [
+  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music (2 cols)
+  const row1 = [
     { platform: 'tiktok' as const, items: tiktok },
     { platform: 'twitter' as const, items: twitter },
     { platform: 'youtube' as const, items: youtube },
-    { platform: 'spotify' as const, items: spotify },
   ]
+  const row2 = [
+    { platform: 'spotify' as const, items: spotify },
+    { platform: 'apple' as const, items: apple },
+  ]
+
+  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2)]
 
   return (
     <div className="relative z-10">
@@ -67,14 +91,14 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
           </div>
           <div className="flex-1 overflow-hidden pl-3 sm:pl-5">
             <div className="flex items-center gap-4 sm:gap-8 whitespace-nowrap" style={{ animation: 'ticker 30s linear infinite' }}>
-              {[...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,3), ...spotify.slice(0,2)].map((item, i) => (
+              {allItems.map((item, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-[12px] font-semibold text-[var(--text2)] cursor-pointer hover:text-[var(--text)] transition-colors">
                   <span className="text-[8px] sm:text-[9px] font-black tracking-[0.1em] uppercase px-1 sm:px-1.5 py-0.5 rounded"
                     style={{
-                      background: `rgba(${item.platform === 'tiktok' ? '255,45,107' : item.platform === 'twitter' ? '200,200,200' : item.platform === 'spotify' ? '29,185,84' : '255,51,51'},0.15)`,
-                      color: item.platform === 'tiktok' ? '#ff2d6b' : item.platform === 'twitter' ? '#e0e0e0' : item.platform === 'spotify' ? '#1DB954' : '#ff3333',
+                      background: `rgba(${platRgb(item.platform)},0.15)`,
+                      color: platTextColor(item.platform),
                     }}>
-                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : 'YT'}
+                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : 'YT'}
                   </span>
                   <span className="font-black text-[#ff2d6b]">#{item.rank}</span>
                   {item.songTitle} — {item.artistName}
@@ -130,6 +154,7 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
                   { id: 'twitter', label: 'X', color: '#e0e0e0' },
                   { id: 'youtube', label: 'YouTube', color: '#ff3333' },
                   { id: 'spotify', label: 'Spotify', color: '#1DB954' },
+                  { id: 'apple', label: 'Apple Music', color: '#fc3c44' },
                 ].map(p => (
                   <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
                     className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap',
@@ -147,92 +172,18 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
         </div>
       </div>
 
-      {/* 4-col trending — stacks on mobile */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {platformColumns.map(({ platform, items }) => {
-          const meta = PLAT_META[platform]
-          return (
-            <div key={platform} className="flex flex-col">
-              {/* Column header */}
-              <div className="flex items-center justify-between px-4 sm:px-[22px] py-3 sm:py-[18px] rounded-t-[14px] border border-b-0"
-                style={{
-                  background: `rgba(${platform === 'tiktok' ? '255,45,107' : platform === 'twitter' ? '200,200,200' : platform === 'spotify' ? '29,185,84' : '255,51,51'},0.05)`,
-                  borderColor: `rgba(${platform === 'tiktok' ? '255,45,107' : platform === 'twitter' ? '200,200,200' : platform === 'spotify' ? '29,185,84' : '255,51,51'},0.2)`,
-                }}>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[11px] flex items-center justify-center"
-                    style={{ background: `rgba(${platform === 'tiktok' ? '255,45,107' : platform === 'twitter' ? '200,200,200' : platform === 'spotify' ? '29,185,84' : '255,51,51'},0.12)` }}>
-                    <PlatformIcon platform={platform} />
-                  </div>
-                  <div>
-                    <div className="text-[14px] sm:text-[16px] font-extrabold tracking-[-0.02em]" style={{ color: platform === 'twitter' ? '#e0e0e0' : meta.color, fontFamily: 'Space Grotesk, sans-serif' }}>{meta.label}</div>
-                    <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text3)] mt-0.5">{meta.sub}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[16px] sm:text-[20px] font-bold" style={{ color: platform === 'twitter' ? '#e0e0e0' : meta.color, fontFamily: 'Space Grotesk, sans-serif' }}>Top {items.length}</div>
-                  <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--text3)] mt-0.5">{meta.updated}</div>
-                </div>
-              </div>
+      {/* Row 1: TikTok, X, YouTube — 3 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+        {row1.map(({ platform, items }) => (
+          <TrendingColumn key={platform} platform={platform} items={items} />
+        ))}
+      </div>
 
-              {/* Rows */}
-              <div className="rounded-b-[14px] border border-t-0 bg-[var(--bg2)] overflow-hidden"
-                style={{ borderColor: `rgba(${platform === 'tiktok' ? '255,45,107' : platform === 'twitter' ? '200,200,200' : platform === 'spotify' ? '29,185,84' : '255,51,51'},0.15)` }}>
-                {items.map(item => (
-                  <div key={item.id} className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-[18px] py-2.5 sm:py-3 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] relative overflow-hidden">
-                    {/* Rank */}
-                    <div className="flex flex-col items-center gap-0.5 w-[22px] sm:w-[26px] flex-shrink-0">
-                      <span className={cn('text-[15px] sm:text-[17px] font-bold leading-none', item.rank === 1 ? 'rank-gold' : item.rank === 2 ? 'rank-silver' : item.rank === 3 ? 'rank-bronze' : item.isNew ? 'text-[#3b82f6]' : 'text-[var(--text3)]')}
-                        style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                        {item.rank}
-                      </span>
-                      <span className={cn('text-[8px] sm:text-[9.5px] font-bold flex items-center gap-0.5',
-                        item.isNew ? 'text-[#3b82f6]' : item.rankChange > 0 ? 'text-[var(--green)]' : item.rankChange < 0 ? 'text-[var(--pink)]' : 'text-[var(--text3)]')}>
-                        {item.isNew ? 'NEW' : item.rankChange > 0 ? `↑${item.rankChange}` : item.rankChange < 0 ? `↓${Math.abs(item.rankChange)}` : '—'}
-                      </span>
-                    </div>
-
-                    {/* Art */}
-                    <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[17px] sm:text-[21px] flex-shrink-0 border border-[rgba(255,255,255,0.05)]"
-                      style={{ background: item.artGradient ?? 'var(--bg3)' }}>
-                      {item.artEmoji}
-                    </div>
-
-                    {/* Info + Badge (inline, no overlap) */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{item.songTitle}</span>
-                        {item.badge && (
-                          <span className="flex-shrink-0 text-[7px] sm:text-[8px] font-black tracking-[0.1em] uppercase px-1 sm:px-1.5 py-0.5 rounded"
-                            style={item.badge === 'hot' ? { background: 'rgba(255,107,26,0.15)', color: '#ff6b1a' }
-                              : item.badge === 'new' ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }
-                              : item.badge === 'peak' ? { background: 'rgba(245,200,66,0.12)', color: '#f5c842' }
-                              : { background: 'rgba(29,185,84,0.12)', color: '#1DB954' }}>
-                            {item.badge === 'hot' ? 'HOT' : item.badge === 'new' ? 'NEW' : item.badge === 'peak' ? 'PEAK' : 'RISING'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5 truncate">{item.artistName}</div>
-                    </div>
-
-                    {/* Metric — with left padding to separate from badges */}
-                    <div className="text-right flex-shrink-0 pl-3">
-                      <div className="text-[11px] sm:text-[12.5px] font-extrabold tracking-[-0.02em]" style={{ color: platform === 'twitter' ? '#e0e0e0' : meta.color }}>
-                        {formatCount(item.metric)}
-                      </div>
-                      <div className="text-[9px] sm:text-[10px] font-semibold text-[var(--text3)] mt-0.5">{item.metricUnit}</div>
-                    </div>
-
-                    {/* Surge bar */}
-                    {item.surgePercent && (
-                      <div className="surge-bar" style={{ background: meta.color, width: `${item.surgePercent}%`, opacity: 0.5 }} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
+      {/* Row 2: Spotify, Apple Music — 2 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        {row2.map(({ platform, items }) => (
+          <TrendingColumn key={platform} platform={platform} items={items} />
+        ))}
       </div>
 
       {/* Bottom: Velocity + Cross-platform — stacks on mobile */}
@@ -259,7 +210,6 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
                   <div className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{v.songTitle}</div>
                   <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5 truncate">{v.artistName} · {v.context}</div>
                 </div>
-                {/* Sparkline - hidden on small mobile */}
                 <div className="w-12 sm:w-14 flex-shrink-0 hidden xs:block">
                   <MiniSparkline data={v.sparkline} />
                 </div>
@@ -293,11 +243,10 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
                   <div className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{cp.songTitle}</div>
                   <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5">{cp.artistName}</div>
                 </div>
-                {/* Platform icons - hidden on very small screens */}
                 <div className="items-center gap-1 flex-shrink-0 hidden sm:flex">
                   {cp.platforms.map(p => (
                     <div key={p} className="w-[22px] h-[22px] rounded-md flex items-center justify-center"
-                      style={{ background: p === 'tiktok' ? 'rgba(255,45,107,0.12)' : p === 'twitter' ? 'rgba(200,200,200,0.12)' : p === 'youtube' ? 'rgba(255,51,51,0.12)' : 'rgba(29,185,84,0.12)' }}>
+                      style={{ background: `rgba(${platRgb(p)},0.12)` }}>
                       <MiniPlatformIcon platform={p} />
                     </div>
                   ))}
@@ -324,7 +273,6 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
             </div>
           </div>
           <div className="px-3 sm:px-6 py-4 sm:py-5 overflow-x-auto">
-            {/* Legend */}
             <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-5 flex-wrap">
               {['No activity', 'Low', 'Moderate', 'High', 'Very High', 'Viral'].map((label, i) => (
                 <div key={label} className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[12px] font-semibold text-[var(--text3)]">
@@ -333,7 +281,6 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
                 </div>
               ))}
             </div>
-            {/* Grid - scrollable on mobile */}
             <div className="grid gap-[3px] sm:gap-[5px] min-w-[500px]" style={{ gridTemplateColumns: '70px sm:90px repeat(7, 1fr)' }}>
               <div />
               {days.map(d => (
@@ -361,7 +308,96 @@ export function TrendingPageClient({ tiktok, twitter, youtube, spotify, crossPla
   )
 }
 
-// Tiny helpers
+// ── Reusable Trending Column ──────────────────────────────────
+function TrendingColumn({ platform, items }: { platform: string; items: TrendingItem[] }) {
+  const meta = PLAT_META[platform]
+  const rgb = platRgb(platform)
+  const textColor = platTextColor(platform)
+
+  return (
+    <div className="flex flex-col">
+      {/* Column header */}
+      <div className="flex items-center justify-between px-4 sm:px-[22px] py-3 sm:py-[18px] rounded-t-[14px] border border-b-0"
+        style={{
+          background: `rgba(${rgb},0.05)`,
+          borderColor: `rgba(${rgb},0.2)`,
+        }}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[11px] flex items-center justify-center"
+            style={{ background: `rgba(${rgb},0.12)` }}>
+            <PlatformIcon platform={platform as any} />
+          </div>
+          <div>
+            <div className="text-[14px] sm:text-[16px] font-extrabold tracking-[-0.02em]" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>{meta.label}</div>
+            <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text3)] mt-0.5">{meta.sub}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[16px] sm:text-[20px] font-bold" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>Top {items.length}</div>
+          <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--text3)] mt-0.5">{meta.updated}</div>
+        </div>
+      </div>
+
+      {/* Rows */}
+      <div className="rounded-b-[14px] border border-t-0 bg-[var(--bg2)] overflow-hidden"
+        style={{ borderColor: `rgba(${rgb},0.15)` }}>
+        {items.map(item => (
+          <div key={item.id} className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-[18px] py-2.5 sm:py-3 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] relative overflow-hidden">
+            {/* Rank */}
+            <div className="flex flex-col items-center gap-0.5 w-[22px] sm:w-[26px] flex-shrink-0">
+              <span className={cn('text-[15px] sm:text-[17px] font-bold leading-none', item.rank === 1 ? 'rank-gold' : item.rank === 2 ? 'rank-silver' : item.rank === 3 ? 'rank-bronze' : item.isNew ? 'text-[#3b82f6]' : 'text-[var(--text3)]')}
+                style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                {item.rank}
+              </span>
+              <span className={cn('text-[8px] sm:text-[9.5px] font-bold flex items-center gap-0.5',
+                item.isNew ? 'text-[#3b82f6]' : item.rankChange > 0 ? 'text-[var(--green)]' : item.rankChange < 0 ? 'text-[var(--pink)]' : 'text-[var(--text3)]')}>
+                {item.isNew ? 'NEW' : item.rankChange > 0 ? `↑${item.rankChange}` : item.rankChange < 0 ? `↓${Math.abs(item.rankChange)}` : '—'}
+              </span>
+            </div>
+
+            {/* Art */}
+            <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[17px] sm:text-[21px] flex-shrink-0 border border-[rgba(255,255,255,0.05)]"
+              style={{ background: item.artGradient ?? 'var(--bg3)' }}>
+              {item.artEmoji}
+            </div>
+
+            {/* Info + Badge (inline, no overlap) */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{item.songTitle}</span>
+                {item.badge && (
+                  <span className="flex-shrink-0 text-[7px] sm:text-[8px] font-black tracking-[0.1em] uppercase px-1 sm:px-1.5 py-0.5 rounded"
+                    style={item.badge === 'hot' ? { background: 'rgba(255,107,26,0.15)', color: '#ff6b1a' }
+                      : item.badge === 'new' ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }
+                      : item.badge === 'peak' ? { background: 'rgba(245,200,66,0.12)', color: '#f5c842' }
+                      : { background: 'rgba(29,185,84,0.12)', color: '#1DB954' }}>
+                    {item.badge === 'hot' ? 'HOT' : item.badge === 'new' ? 'NEW' : item.badge === 'peak' ? 'PEAK' : 'RISING'}
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5 truncate">{item.artistName}</div>
+            </div>
+
+            {/* Metric */}
+            <div className="text-right flex-shrink-0 pl-3">
+              <div className="text-[11px] sm:text-[12.5px] font-extrabold tracking-[-0.02em]" style={{ color: textColor }}>
+                {formatCount(item.metric)}
+              </div>
+              <div className="text-[9px] sm:text-[10px] font-semibold text-[var(--text3)] mt-0.5">{item.metricUnit}</div>
+            </div>
+
+            {/* Surge bar */}
+            {item.surgePercent && (
+              <div className="surge-bar" style={{ background: meta.color, width: `${item.surgePercent}%`, opacity: 0.5 }} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Tiny helpers ──────────────────────────────────────────────
 function MiniSparkline({ data }: { data: number[] }) {
   const w = 56, h = 20
   const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - v * (h - 2) - 1}`)
@@ -372,14 +408,15 @@ function MiniSparkline({ data }: { data: number[] }) {
   )
 }
 
-function PlatformIcon({ platform }: { platform: 'tiktok' | 'twitter' | 'youtube' | 'spotify' }) {
+function PlatformIcon({ platform }: { platform: 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' }) {
   if (platform === 'tiktok') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.5 2c.2 2.2 1.5 3.7 3.9 4.3v2.9c-1.4 0-2.7-.4-3.9-1.2V13c0 3-2.3 4.7-4.7 4.7S4.1 16 4.1 13s2.3-4.7 4.7-4.7c.35 0 .7.04 1 .1v3c-.3-.07-.65-.1-1-.1-1.05 0-1.8.8-1.8 1.7s.75 1.7 1.8 1.7 1.8-.8 1.8-1.7V2h2.9z" fill="#ff2d6b"/></svg>
   if (platform === 'twitter') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3.5 4.5h2l3 4.5 4-4.5h2l-5 5.5L15 16h-2l-3.5-5-4.5 5h-2l5.5-6L3.5 4.5z" fill="#000000"/></svg>
   if (platform === 'spotify') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8.5" stroke="#1DB954" strokeWidth="1.4" fill="none"/><path d="M6.5 8.5c2.5-1 5.5-0.8 7.5 0" stroke="#1DB954" strokeWidth="1.3" strokeLinecap="round" fill="none"/><path d="M7 11c2-0.7 4.5-0.5 6 0.3" stroke="#1DB954" strokeWidth="1.1" strokeLinecap="round" fill="none"/><path d="M7.5 13.3c1.5-0.5 3.5-0.4 5 0.2" stroke="#1DB954" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>
+  if (platform === 'apple') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M14 8.5c0-1.5-1.3-2.5-2.5-2.5-0.7 0-1.2.3-1.5.5C9.7 6.3 9.2 6 8.5 6 7.3 6 6 7 6 8.5 6 11 10 14.5 10 14.5s4-3.5 4-6z" fill="#fc3c44"/><path d="M11.5 6c0.3-0.8 1-1.5 1-1.5s-1-0.2-1.5.5" stroke="#fc3c44" strokeWidth="0.8" strokeLinecap="round" fill="none"/></svg>
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="3.5" width="17" height="13" rx="3.5" stroke="#ff3333" strokeWidth="1.4" fill="none"/><polygon points="8,7.5 14,10 8,12.5" fill="#ff3333"/></svg>
 }
 
 function MiniPlatformIcon({ platform }: { platform: string }) {
-  const color = platform === 'tiktok' ? '#ff2d6b' : platform === 'twitter' ? '#e0e0e0' : platform === 'youtube' ? '#ff3333' : '#1DB954'
+  const color = platform === 'tiktok' ? '#ff2d6b' : platform === 'twitter' ? '#e0e0e0' : platform === 'youtube' ? '#ff3333' : platform === 'apple' ? '#fc3c44' : '#1DB954'
   return <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" fill={color} opacity="0.8"/></svg>
 }

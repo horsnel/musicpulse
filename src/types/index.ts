@@ -96,7 +96,7 @@ export interface ChartEntry {
 }
 
 // ─── TRENDING ──────────────────────────────────────────────────
-export type TrendingPlatform = 'tiktok' | 'twitter' | 'youtube' | 'spotify'
+export type TrendingPlatform = 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple'
 export type TrendBadge = 'hot' | 'rising' | 'new' | 'peak' | null
 
 export interface TrendingItem {

@@ -235,6 +235,14 @@ const MOCK_TRENDING: Record<TrendingPlatform, TrendingItem[]> = {
     { id: 'sp1', rank: 1, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 12400000, metricUnit: 'streams', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
     { id: 'sp2', rank: 2, rankChange: 0, isNew: false, platform: 'spotify', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 11800000, metricUnit: 'streams', badge: null, surgePercent: 88, updatedAt: '2025-04-27T12:00:00Z' },
   ],
+  apple: [
+    { id: 'am1', rank: 1, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '🎵', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 8900000, metricUnit: 'plays', badge: 'hot', surgePercent: 96, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am2', rank: 2, rankChange: 2, isNew: false, platform: 'apple', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '🌸', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 7600000, metricUnit: 'plays', badge: 'rising', surgePercent: 85, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am3', rank: 3, rankChange: 0, isNew: false, platform: 'apple', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '🎤', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 6200000, metricUnit: 'plays', badge: null, surgePercent: 72, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am4', rank: 4, rankChange: -1, isNew: false, platform: 'apple', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '☕', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 5800000, metricUnit: 'plays', badge: null, surgePercent: 64, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am5', rank: 5, rankChange: 3, isNew: false, platform: 'apple', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '🎶', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 5100000, metricUnit: 'plays', badge: 'new', surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'am6', rank: 6, rankChange: 0, isNew: true, platform: 'apple', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '🎺', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 4700000, metricUnit: 'plays', badge: null, surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
+  ],
 }
 
 const MOCK_CROSS_PLATFORM: CrossPlatformScore[] = [

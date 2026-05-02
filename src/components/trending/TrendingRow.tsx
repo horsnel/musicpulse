@@ -15,6 +15,7 @@ const PLATFORM_META: Record<TrendingPlatform, { label: string; icon: string; col
   twitter: { label: 'X',           icon: '𝕏',  color: '#e0e0e0',     dim: 'rgba(200,200,200,0.1)' },
   youtube: { label: 'YouTube',      icon: '▶️', color: 'var(--pink)',  dim: 'var(--pink-dim)' },
   spotify: { label: 'Spotify',     icon: '🎶', color: 'var(--green)', dim: 'var(--green-dim)' },
+  apple:   { label: 'Apple Music', icon: '🍎', color: '#fc3c44',     dim: 'rgba(252,60,68,0.1)' },
 }
 
 const BADGE_VARIANT_MAP: Record<string, 'green' | 'pink' | 'gold' | 'purple' | 'blue'> = {
