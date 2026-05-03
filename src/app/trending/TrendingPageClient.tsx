@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { TrendingItem, CrossPlatformScore, VelocityItem, GenreHeatRow } from '@/types'
 import { formatCount, cn } from '@/lib/utils'
+import { PlatformIcon, MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 const API_URL = 'https://musicpulse-api.odehebuka48.workers.dev'
 const API_TIMEOUT = 10000
@@ -240,7 +241,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                         ? 'border-current'
                         : 'border-[var(--border2)] text-[var(--text3)] bg-[var(--bg2)] hover:text-[var(--text2)]')}
                     style={activePlatform === p.id ? { color: p.color, background: `${p.color}18`, borderColor: p.color } : {}}>
-                    {p.id !== 'all' && <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ background: p.color }} />}
+                    {p.id !== 'all' && <span className="flex items-center justify-center"><MiniPlatformIcon platform={p.id as any} size={14} /></span>}
                     {p.label}
                   </button>
                 ))}
@@ -490,15 +491,4 @@ function MiniSparkline({ data }: { data: number[] }) {
   )
 }
 
-function PlatformIcon({ platform }: { platform: 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' }) {
-  if (platform === 'tiktok') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.5 2c.2 2.2 1.5 3.7 3.9 4.3v2.9c-1.4 0-2.7-.4-3.9-1.2V13c0 3-2.3 4.7-4.7 4.7S4.1 16 4.1 13s2.3-4.7 4.7-4.7c.35 0 .7.04 1 .1v3c-.3-.07-.65-.1-1-.1-1.05 0-1.8.8-1.8 1.7s.75 1.7 1.8 1.7 1.8-.8 1.8-1.7V2h2.9z" fill="#ff2d6b"/></svg>
-  if (platform === 'twitter') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3.5 4.5h2l3 4.5 4-4.5h2l-5 5.5L15 16h-2l-3.5-5-4.5 5h-2l5.5-6L3.5 4.5z" fill="#000000"/></svg>
-  if (platform === 'spotify') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8.5" stroke="#1DB954" strokeWidth="1.4" fill="none"/><path d="M6.5 8.5c2.5-1 5.5-0.8 7.5 0" stroke="#1DB954" strokeWidth="1.3" strokeLinecap="round" fill="none"/><path d="M7 11c2-0.7 4.5-0.5 6 0.3" stroke="#1DB954" strokeWidth="1.1" strokeLinecap="round" fill="none"/><path d="M7.5 13.3c1.5-0.5 3.5-0.4 5 0.2" stroke="#1DB954" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>
-  if (platform === 'apple') return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M14 8.5c0-1.5-1.3-2.5-2.5-2.5-0.7 0-1.2.3-1.5.5C9.7 6.3 9.2 6 8.5 6 7.3 6 6 7 6 8.5 6 11 10 14.5 10 14.5s4-3.5 4-6z" fill="#fc3c44"/><path d="M11.5 6c0.3-0.8 1-1.5 1-1.5s-1-0.2-1.5.5" stroke="#fc3c44" strokeWidth="0.8" strokeLinecap="round" fill="none"/></svg>
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="3.5" width="17" height="13" rx="3.5" stroke="#ff3333" strokeWidth="1.4" fill="none"/><polygon points="8,7.5 14,10 8,12.5" fill="#ff3333"/></svg>
-}
-
-function MiniPlatformIcon({ platform }: { platform: string }) {
-  const color = platform === 'tiktok' ? '#ff2d6b' : platform === 'twitter' ? '#e0e0e0' : platform === 'youtube' ? '#ff3333' : platform === 'apple' ? '#fc3c44' : '#1DB954'
-  return <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" fill={color} opacity="0.8"/></svg>
-}
+// PlatformIcon and MiniPlatformIcon are now imported from @/components/ui/PlatformIcons

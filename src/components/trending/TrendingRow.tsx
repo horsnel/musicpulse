@@ -3,6 +3,7 @@
 import type { TrendingItem, TrendingPlatform } from '@/types'
 import { cn, formatCount } from '@/lib/utils'
 import { Badge, LiveDot } from '@/components/ui'
+import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 interface TrendingRowProps {
   tiktok: TrendingItem[]
@@ -10,12 +11,14 @@ interface TrendingRowProps {
   youtube: TrendingItem[]
 }
 
-const PLATFORM_META: Record<TrendingPlatform, { label: string; icon: string; color: string; dim: string }> = {
-  tiktok:  { label: 'TikTok',      icon: '🎵', color: 'var(--pink)',  dim: 'var(--pink-dim)' },
-  twitter: { label: 'X',           icon: '𝕏',  color: '#e0e0e0',     dim: 'rgba(200,200,200,0.1)' },
-  youtube: { label: 'YouTube',      icon: '▶️', color: 'var(--pink)',  dim: 'var(--pink-dim)' },
-  spotify: { label: 'Spotify',     icon: '🎶', color: 'var(--green)', dim: 'var(--green-dim)' },
-  apple:   { label: 'Apple Music', icon: '🍎', color: '#fc3c44',     dim: 'rgba(252,60,68,0.1)' },
+const PLATFORM_META: Record<TrendingPlatform, { label: string; color: string; dim: string }> = {
+  tiktok:     { label: 'TikTok',      color: '#ff2d6b',  dim: 'rgba(255,45,107,0.1)' },
+  twitter:    { label: 'X',           color: '#e0e0e0',  dim: 'rgba(200,200,200,0.1)' },
+  youtube:    { label: 'YouTube',      color: '#FF0000',  dim: 'rgba(255,0,0,0.1)' },
+  spotify:    { label: 'Spotify',     color: '#1DB954',  dim: 'rgba(29,185,84,0.1)' },
+  apple:      { label: 'Apple Music', color: '#fc3c44',  dim: 'rgba(252,60,68,0.1)' },
+  soundcloud: { label: 'SoundCloud',  color: '#FF5500',  dim: 'rgba(255,85,0,0.1)' },
+  billboard:  { label: 'Billboard',   color: '#E60026',  dim: 'rgba(230,0,38,0.1)' },
 }
 
 const BADGE_VARIANT_MAP: Record<string, 'green' | 'pink' | 'gold' | 'purple' | 'blue'> = {
@@ -39,7 +42,7 @@ function TrendingCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <span className="text-[15px]">{meta.icon}</span>
+          <span className="flex items-center justify-center"><MiniPlatformIcon platform={platform} size={16} /></span>
           <h3 className="text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
             {meta.label}
           </h3>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSong } from '@/lib/data'
 import { formatCount, formatDuration, formatDate } from '@/lib/utils'
+import { MiniPlatformIcon } from '@/components/ui/PlatformIcons'
 
 interface Props { params: { slug: string } }
 
@@ -35,11 +36,11 @@ export default async function SongPage({ params }: Props) {
   const accentDim   = 'rgba(198,66,110,0.1)'
 
   const statStrip = [
-    { label: 'Spotify Streams', value: '2.1B', sub: '+4.2M this week', trend: true, icon: '📊' },
-    { label: 'Peak Position', value: '#1', sub: 'Spotify Global · 6 weeks', icon: '⭐' },
-    { label: 'TikTok Uses', value: song.tiktokUses ? formatCount(song.tiktokUses) : '—', sub: 'Sounds using this track', icon: '🎵' },
-    { label: 'YouTube Views', value: '180M', sub: 'Music video', icon: '📺' },
-    { label: 'On Charts', value: '18 wks', sub: 'Still climbing in 34 countries', icon: '🗓️' },
+    { label: 'Spotify Streams', value: '2.1B', sub: '+4.2M this week', trend: true, platformId: 'spotify' as const },
+    { label: 'Peak Position', value: '#1', sub: 'Spotify Global · 6 weeks', platformId: 'spotify' as const },
+    { label: 'TikTok Uses', value: song.tiktokUses ? formatCount(song.tiktokUses) : '—', sub: 'Sounds using this track', platformId: 'tiktok' as const },
+    { label: 'YouTube Views', value: '180M', sub: 'Music video', platformId: 'youtube' as const },
+    { label: 'On Charts', value: '18 wks', sub: 'Still climbing in 34 countries', platformId: 'apple' as const },
   ]
 
   return (
@@ -129,11 +130,11 @@ export default async function SongPage({ params }: Props) {
                 Play Preview
               </button>
               {[
-                { label: 'Open in Spotify', color: '#1DB954' },
-                { label: 'Apple Music', color: '#fc3c44' },
+                { label: 'Open in Spotify', platform: 'spotify' as const, color: '#1DB954' },
+                { label: 'Apple Music', platform: 'apple' as const, color: '#fc3c44' },
               ].map(p => (
                 <button key={p.label} className="flex items-center gap-2 px-[18px] py-3 rounded-full text-[13px] font-semibold border border-[var(--border2)] text-[var(--text2)] cursor-pointer transition-all hover:border-[var(--text3)] hover:text-[var(--text)] bg-transparent">
-                  <span className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+                  <MiniPlatformIcon platform={p.platform} size={14} />
                   {p.label}
                 </button>
               ))}
@@ -150,7 +151,7 @@ export default async function SongPage({ params }: Props) {
             <div key={s.label}
               className="bg-[var(--bg2)] px-6 py-5 border-r border-[var(--border)] last:border-r-0 hover:bg-[var(--bg3)] transition-colors cursor-default">
               <div className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--text3)] mb-1.5 flex items-center gap-1.5">
-                <span>{s.icon}</span>{s.label}
+                <MiniPlatformIcon platform={s.platformId} size={12} />{s.label}
               </div>
               <div className="text-[22px] font-black tracking-[-0.03em]" style={{ color: i === 1 ? 'var(--gold)' : 'var(--text)' }}>{s.value}</div>
               {s.trend ? (
@@ -196,15 +197,15 @@ export default async function SongPage({ params }: Props) {
               </svg>
 
               {[
-                { platform: 'Spotify Global', dot: '#1DB954', pos: '#3', peak: '#1', weeks: 18, streams: '2.1B' },
-                { platform: 'Apple Music Global', dot: '#fc3c44', pos: '#1', peak: '#1', weeks: 18, streams: '—' },
-                { platform: 'YouTube Music', dot: '#ff4444', pos: '#4', peak: '#2', weeks: 16, streams: '180M views' },
-                { platform: 'Spotify Nigeria', dot: '#4361ff', pos: '#12', peak: '#8', weeks: 14, streams: '—' },
+                { platform: 'Spotify Global', platformId: 'spotify' as const, pos: '#3', peak: '#1', weeks: 18, streams: '2.1B' },
+                { platform: 'Apple Music Global', platformId: 'apple' as const, pos: '#1', peak: '#1', weeks: 18, streams: '—' },
+                { platform: 'YouTube Music', platformId: 'youtube' as const, pos: '#4', peak: '#2', weeks: 16, streams: '180M views' },
+                { platform: 'Spotify Nigeria', platformId: 'spotify' as const, pos: '#12', peak: '#8', weeks: 14, streams: '—' },
               ].map(r => (
                 <div key={r.platform} className="grid items-center border-b border-[var(--border)] last:border-0"
                   style={{ gridTemplateColumns: '1fr 80px 80px 60px 80px' }}>
                   <div className="flex items-center gap-2 py-3 text-[12.5px] font-semibold">
-                    <span className="w-2 h-2 rounded-full" style={{ background: r.dot }} />
+                    <MiniPlatformIcon platform={r.platformId} size={14} />
                     {r.platform}
                   </div>
                   <div className="text-[13px] font-black" style={{ color: r.pos === '#1' ? 'var(--gold)' : 'var(--green)' }}>{r.pos}</div>
@@ -272,14 +273,14 @@ export default async function SongPage({ params }: Props) {
             <div className="px-[18px] py-[15px] border-b border-[var(--border)] text-[12.5px] font-bold uppercase tracking-[0.06em] text-[var(--text3)]">Listen Now</div>
             <div className="p-4 flex flex-col gap-2">
               {[
-                { name: 'Spotify', sub: '2.1B streams', color: '#1DB954', iconBg: 'rgba(29,185,84,0.1)' },
-                { name: 'Apple Music', sub: 'Currently #1', color: '#fc3c44', iconBg: 'rgba(252,60,68,0.1)' },
-                { name: 'YouTube Music', sub: '180M views', color: '#ff4444', iconBg: 'rgba(255,68,68,0.1)' },
-                { name: 'TikTok', sub: '4.2M sounds', color: '#ff2d6b', iconBg: 'rgba(255,45,107,0.1)' },
+                { name: 'Spotify', sub: '2.1B streams', platform: 'spotify' as const, iconBg: 'rgba(29,185,84,0.1)' },
+                { name: 'Apple Music', sub: 'Currently #1', platform: 'apple' as const, iconBg: 'rgba(252,60,68,0.1)' },
+                { name: 'YouTube Music', sub: '180M views', platform: 'youtube' as const, iconBg: 'rgba(255,0,0,0.1)' },
+                { name: 'TikTok', sub: '4.2M sounds', platform: 'tiktok' as const, iconBg: 'rgba(255,45,107,0.1)' },
               ].map(s => (
                 <a key={s.name} href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border)] no-underline transition-all hover:border-[var(--border2)] hover:bg-[var(--bg3)]">
                   <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: s.iconBg }}>
-                    <span className="w-3 h-3 rounded-full" style={{ background: s.color }} />
+                    <MiniPlatformIcon platform={s.platform} size={18} />
                   </div>
                   <div className="flex-1">
                     <div className="text-[13.5px] font-bold tracking-[-0.01em] text-[var(--text)]">{s.name}</div>

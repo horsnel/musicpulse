@@ -2,6 +2,7 @@
 
 import type { CrossPlatformScore } from '@/types'
 import { cn } from '@/lib/utils'
+import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 interface Props {
   crossPlatform: CrossPlatformScore[]
@@ -11,12 +12,13 @@ function PlatformBadge({ platform }: { platform: string }) {
   const colors: Record<string, { bg: string; color: string; label: string }> = {
     tiktok:  { bg: 'rgba(255,45,107,0.12)',  color: '#ff2d6b',  label: 'TikTok' },
     twitter: { bg: 'rgba(200,200,200,0.12)',  color: '#e0e0e0',  label: 'X' },
-    youtube: { bg: 'rgba(255,51,51,0.12)',    color: '#ff3333',  label: 'YouTube' },
+    youtube: { bg: 'rgba(255,0,0,0.12)',      color: '#FF0000',  label: 'YouTube' },
     spotify: { bg: 'rgba(29,185,84,0.12)',    color: '#1DB954',  label: 'Spotify' },
   }
   const c = colors[platform] ?? { bg: 'var(--bg3)', color: 'var(--text3)', label: platform }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: c.bg, color: c.color }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: c.bg, color: c.color }}>
+      <MiniPlatformIcon platform={platform as any} size={10} />
       {c.label}
     </span>
   )

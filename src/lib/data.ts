@@ -273,6 +273,14 @@ const MOCK_TRENDING: Record<TrendingPlatform, TrendingItem[]> = {
     { id: 'am5', rank: 5, rankChange: 3, isNew: false, platform: 'apple', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 5100000, metricUnit: 'plays', badge: 'new', surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
     { id: 'am6', rank: 6, rankChange: 0, isNew: true, platform: 'apple', songTitle: 'luther', artistName: 'Kendrick Lamar, SZA', artEmoji: '\u{1F3BA}', artGradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', metric: 4700000, metricUnit: 'plays', badge: null, surgePercent: 48, updatedAt: '2025-04-27T12:00:00Z' },
   ],
+  soundcloud: [
+    { id: 'sc1', rank: 1, rankChange: 1, isNew: false, platform: 'soundcloud', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 3200000, metricUnit: 'plays', badge: 'hot', surgePercent: 88, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'sc2', rank: 2, rankChange: 0, isNew: false, platform: 'soundcloud', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 2800000, metricUnit: 'plays', badge: 'rising', surgePercent: 75, updatedAt: '2025-04-27T12:00:00Z' },
+  ],
+  billboard: [
+    { id: 'bb1', rank: 1, rankChange: 0, isNew: false, platform: 'billboard', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 92000000, metricUnit: 'units', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'bb2', rank: 2, rankChange: 2, isNew: false, platform: 'billboard', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 78000000, metricUnit: 'units', badge: 'rising', surgePercent: 85, updatedAt: '2025-04-27T12:00:00Z' },
+  ],
 }
 
 const MOCK_CROSS_PLATFORM: CrossPlatformScore[] = [

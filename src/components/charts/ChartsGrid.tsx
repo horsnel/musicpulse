@@ -3,6 +3,7 @@
 import type { ChartEntry } from '@/types'
 import { cn, formatCount, formatRankChange, PLATFORM_LABELS } from '@/lib/utils'
 import { LiveDot } from '@/components/ui'
+import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 interface ChartsGridProps {
   spotifyEntries: ChartEntry[]
@@ -15,9 +16,9 @@ const RANK_COLORS: Record<number, string> = {
   3: 'rank-bronze',
 }
 
-const PLATFORM_ACCENT: Record<string, { color: string; dim: string; icon: string }> = {
-  spotify: { color: 'var(--green)', dim: 'var(--green-dim)', icon: '🎵' },
-  apple:   { color: 'var(--pink)',  dim: 'var(--pink-dim)',  icon: '🍎' },
+const PLATFORM_ACCENT: Record<string, { color: string; dim: string }> = {
+  spotify: { color: '#1DB954', dim: 'rgba(29,185,84,0.1)' },
+  apple:   { color: '#fc3c44', dim: 'rgba(252,60,68,0.1)' },
 }
 
 function ChartCard({
@@ -35,7 +36,7 @@ function ChartCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <span className="text-[16px]">{accent.icon}</span>
+          <span className="flex items-center justify-center"><MiniPlatformIcon platform={platform} size={16} /></span>
           <h3 className="text-[14px] font-bold text-[var(--text)] tracking-[-0.01em]">
             {label}
           </h3>

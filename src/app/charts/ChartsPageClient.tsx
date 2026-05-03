@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import type { ChartEntry, Platform, ChartRegion } from '@/types'
 import { formatCount, REGION_META } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 const API_URL = 'https://musicpulse-api.odehebuka48.workers.dev'
 
@@ -151,7 +152,7 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                 )}
                 style={platform === p.id ? { borderBottomColor: p.color, background: 'none' } : { background: 'none' }}
               >
-                <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+                <span className="flex items-center justify-center"><MiniPlatformIcon platform={p.id} size={14} /></span>
                 {p.label}
               </button>
             ))}

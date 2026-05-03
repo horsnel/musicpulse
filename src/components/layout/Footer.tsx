@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PlatformIcon } from '@/components/ui/PlatformIcons'
 
 const FOOTER_COLS = [
   {
@@ -78,10 +79,15 @@ export function Footer() {
               The world&apos;s music data in one place. Charts, trends, releases, and artists — updated around the clock.
             </p>
             <div className="flex gap-2">
-              {[TwitterIcon, InstagramIcon, TikTokIcon, RSSIcon].map((Icon, i) => (
-                <button key={i} className="w-[34px] h-[34px] rounded-[9px] bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center cursor-pointer transition-all hover:border-[var(--border2)] hover:text-[var(--text)] text-[var(--text3)]">
-                  <Icon />
-                </button>
+              {[
+                { platform: 'twitter' as const, href: 'https://x.com/musicpulse' },
+                { platform: 'instagram' as const, href: 'https://instagram.com/musicpulse' },
+                { platform: 'tiktok' as const, href: 'https://tiktok.com/@musicpulse' },
+                { platform: 'rss' as const, href: '/rss' },
+              ].map(s => (
+                <a key={s.platform} href={s.href} target="_blank" rel="noopener noreferrer" className="w-[34px] h-[34px] rounded-[9px] bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center cursor-pointer transition-all hover:border-[var(--border2)] hover:scale-110">
+                  <PlatformIcon platform={s.platform} size={16} />
+                </a>
               ))}
             </div>
           </div>
@@ -147,7 +153,3 @@ function WaveformIcon() {
     </svg>
   )
 }
-function TwitterIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l5 6L1 13h1.5l3.5-4.3 3 4.3H12L6.8 6.5 11.5 1H10L6.2 4.8 4 1H1z" fill="currentColor"/></svg> }
-function InstagramIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="1.3" fill="none"/><circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.3" fill="none"/><circle cx="10.5" cy="3.5" r="0.7" fill="currentColor"/></svg> }
-function TikTokIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5c.2 1.5 1.1 2.5 2.7 3v2c-1 0-1.9-.3-2.7-.9V9c0 2.1-1.6 3.2-3.2 3.2S3.1 11.1 3.1 9s1.6-3.2 3.2-3.2c.2 0 .4 0 .6.1v2c-.2-.03-.4-.04-.6-.04-.7 0-1.2.5-1.2 1.2s.5 1.2 1.2 1.2 1.2-.5 1.2-1.2V1.5h2z" fill="currentColor"/></svg> }
-function RSSIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="11" r="1.3" fill="currentColor"/><path d="M1.7 7c2.9 0 5.3 2.4 5.3 5.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/><path d="M1.7 3.5c4.6 0 8.3 3.7 8.3 8.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg> }
