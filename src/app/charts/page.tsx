@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { getChartEntries, getCountryCharts } from '@/lib/data'
 import { ChartsPageClient } from './ChartsPageClient'
 
@@ -17,11 +18,13 @@ export default async function ChartsPage() {
   ])
 
   return (
-    <ChartsPageClient
-      initialEntries={entries}
-      countryCharts={countryCharts}
-      initialPlatform={platform}
-      initialRegion={region}
-    />
+    <Suspense>
+      <ChartsPageClient
+        initialEntries={entries}
+        countryCharts={countryCharts}
+        initialPlatform={platform}
+        initialRegion={region}
+      />
+    </Suspense>
   )
 }
