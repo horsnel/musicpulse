@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import type { TrendingItem, CrossPlatformScore, VelocityItem, GenreHeatRow } from '@/types'
 import { formatCount, cn } from '@/lib/utils'
 import { PlatformIcon, MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
@@ -308,15 +309,26 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   { id: 'musixmatch', label: 'Musixmatch', color: '#FF6E40' },
                   { id: 'iheart', label: 'iHeart', color: '#C6002B' },
                 ].map(p => (
-                  <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
-                    className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap',
-                      activePlatform === p.id
-                        ? 'border-current'
-                        : 'border-[var(--border2)] text-[var(--text3)] bg-[var(--bg2)] hover:text-[var(--text2)]')}
-                    style={activePlatform === p.id ? { color: p.color, background: `${p.color}18`, borderColor: p.color } : {}}>
-                    {p.id !== 'all' && <span className="flex items-center justify-center"><MiniPlatformIcon platform={p.id as any} size={14} /></span>}
-                    {p.label}
-                  </button>
+                  p.id === 'all' ? (
+                    <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
+                      className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap',
+                        activePlatform === p.id
+                          ? 'border-current'
+                          : 'border-[var(--border2)] text-[var(--text3)] bg-[var(--bg2)] hover:text-[var(--text2)]')}
+                      style={activePlatform === p.id ? { color: p.color, background: `${p.color}18`, borderColor: p.color } : {}}>
+                      {p.label}
+                    </button>
+                  ) : (
+                    <Link key={p.id} href={PLAT_ROUTE[p.id]}
+                      className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap no-underline',
+                        activePlatform === p.id
+                          ? 'border-current'
+                          : 'border-[var(--border2)] text-[var(--text3)] bg-[var(--bg2)] hover:text-[var(--text2)] hover:border-[var(--border2)]')}
+                      style={activePlatform === p.id ? { color: p.color, background: `${p.color}18`, borderColor: p.color } : {}}>
+                      <span className="flex items-center justify-center"><MiniPlatformIcon platform={p.id as any} size={14} /></span>
+                      {p.label}
+                    </Link>
+                  )
                 ))}
               </div>
             </div>
@@ -483,11 +495,29 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   )
 }
 
+// Map platform key → trending page route
+const PLAT_ROUTE: Record<string, string> = {
+  tiktok: '/trending/tiktok',
+  twitter: '/trending/twitter',
+  youtube: '/trending/youtube',
+  spotify: '/trending/spotify',
+  apple: '/trending/apple',
+  deezer: '/trending/deezer',
+  soundcloud: '/trending/soundcloud',
+  billboard: '/trending/billboard',
+  bandcamp: '/trending/bandcamp',
+  audiomack: '/trending/audiomack',
+  genius: '/trending/genius',
+  musixmatch: '/trending/musixmatch',
+  iheart: '/trending/iheart',
+}
+
 // ── Reusable Trending Column ──────────────────────────────────
 function TrendingColumn({ platform, items }: { platform: string; items: TrendingItem[] }) {
   const meta = PLAT_META[platform]
   const rgb = platRgb(platform)
   const textColor = platTextColor(platform)
+  const route = PLAT_ROUTE[platform]
 
   return (
     <div className="flex flex-col">
@@ -497,8 +527,8 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
           background: `rgba(${rgb},0.05)`,
           borderColor: `rgba(${rgb},0.2)`,
         }}>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[11px] flex items-center justify-center"
+        <Link href={route} className="flex items-center gap-2 sm:gap-3 no-underline group">
+          <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[11px] flex items-center justify-center transition-transform group-hover:scale-110"
             style={{ background: `rgba(${rgb},0.12)` }}>
             <PlatformIcon platform={platform as any} />
           </div>
@@ -506,10 +536,15 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
             <div className="text-[14px] sm:text-[16px] font-extrabold tracking-[-0.02em]" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>{meta.label}</div>
             <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text3)] mt-0.5">{meta.sub}</div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[16px] sm:text-[20px] font-bold" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>Top {items.length}</div>
-          <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--text3)] mt-0.5">{meta.updated}</div>
+        </Link>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <div className="text-[16px] sm:text-[20px] font-bold" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>Top {items.length}</div>
+            <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--text3)] mt-0.5">{meta.updated}</div>
+          </div>
+          <Link href={route} className="flex items-center justify-center w-[26px] h-[26px] rounded-lg bg-[var(--bg3)] border border-[var(--border)] text-[var(--text3)] no-underline transition-all hover:border-[var(--border2)] hover:text-[var(--text2)] hover:scale-110 flex-shrink-0">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><polyline points="6.5,2.5 10,6 6.5,9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none"/></svg>
+          </Link>
         </div>
       </div>
 
