@@ -35,6 +35,11 @@ interface Props {
   deezer: TrendingItem[]
   soundcloud: TrendingItem[]
   billboard: TrendingItem[]
+  bandcamp: TrendingItem[]
+  audiomack: TrendingItem[]
+  genius: TrendingItem[]
+  musixmatch: TrendingItem[]
+  iheart: TrendingItem[]
   crossPlatform: CrossPlatformScore[]
   velocity: VelocityItem[]
   heatmap: GenreHeatRow[]
@@ -49,6 +54,11 @@ const PLAT_META: Record<string, { label: string; sub: string; color: string; upd
   deezer:  { label: 'Deezer',          sub: 'Top Charts',         color: '#A238FF',  updated: '1h ago' },
   soundcloud: { label: 'SoundCloud',   sub: 'Trending Tracks',    color: '#FF5500',  updated: '2h ago' },
   billboard:  { label: 'Billboard',    sub: 'Hot 100',            color: '#E60026',  updated: '1d ago' },
+  bandcamp:   { label: 'Bandcamp',     sub: 'Best Selling',       color: '#629AA9',  updated: '2h ago' },
+  audiomack:  { label: 'Audiomack',    sub: 'Trending Streams',   color: '#FFA200',  updated: '1h ago' },
+  genius:     { label: 'Genius',       sub: 'Lyrics & Annotations', color: '#FFFF64', updated: '2h ago' },
+  musixmatch: { label: 'Musixmatch',   sub: 'Lyrics Trends',      color: '#FF6E40',  updated: '3h ago' },
+  iheart:     { label: 'iHeartRadio',  sub: 'Radio Charts',       color: '#C6002B',  updated: '2h ago' },
 }
 
 // Helper to get platform color for rgba backgrounds
@@ -62,6 +72,11 @@ function platRgb(platform: string) {
     case 'deezer':  return '162,56,255'
     case 'soundcloud': return '255,85,0'
     case 'billboard':  return '230,0,38'
+    case 'bandcamp':   return '98,154,169'
+    case 'audiomack':  return '255,162,0'
+    case 'genius':     return '255,255,100'
+    case 'musixmatch': return '255,110,64'
+    case 'iheart':     return '198,0,43'
     default:        return '255,255,255'
   }
 }
@@ -91,8 +106,8 @@ async function fetchFromApi<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
-export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, deezer: initDeezer, soundcloud: initSoundcloud, billboard: initBillboard, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
-  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'deezer' | 'soundcloud' | 'billboard'>('all')
+export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, deezer: initDeezer, soundcloud: initSoundcloud, billboard: initBillboard, bandcamp: initBandcamp, audiomack: initAudiomack, genius: initGenius, musixmatch: initMusixmatch, iheart: initIheart, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
+  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'deezer' | 'soundcloud' | 'billboard' | 'bandcamp' | 'audiomack' | 'genius' | 'musixmatch' | 'iheart'>('all')
   const [timeRange, setTimeRange] = useState('Now')
   const [liveData, setLiveData] = useState(false)
 
@@ -105,6 +120,11 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const [deezer, setDeezer] = useState(initDeezer)
   const [soundcloud, setSoundcloud] = useState(initSoundcloud)
   const [billboard, setBillboard] = useState(initBillboard)
+  const [bandcamp, setBandcamp] = useState(initBandcamp)
+  const [audiomack, setAudiomack] = useState(initAudiomack)
+  const [genius, setGenius] = useState(initGenius)
+  const [musixmatch, setMusixmatch] = useState(initMusixmatch)
+  const [iheart, setIheart] = useState(initIheart)
   const [crossPlatform, setCrossPlatform] = useState(initCP)
   const [velocity, setVelocity] = useState(initVel)
   const [heatmap, setHeatmap] = useState(initHeat)
@@ -117,6 +137,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         const [
           tTiktok, tTwitter, tYoutube, tSpotify, tApple,
           tDeezer, tSoundcloud, tBillboard,
+          tBandcamp, tAudiomack, tGenius, tMusixmatch, tIheart,
           tCP, tVel, tHeat,
         ] = await Promise.all([
           fetchFromApi<TrendingItem[]>('/api/trending?platform=tiktok&limit=8', initTiktok),
@@ -127,6 +148,11 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           fetchFromApi<TrendingItem[]>('/api/trending?platform=deezer&limit=8', initDeezer),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=soundcloud&limit=8', initSoundcloud),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=billboard&limit=8', initBillboard),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=bandcamp&limit=8', initBandcamp),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=audiomack&limit=8', initAudiomack),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=genius&limit=8', initGenius),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=musixmatch&limit=8', initMusixmatch),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=iheart&limit=8', initIheart),
           fetchFromApi<CrossPlatformScore[]>('/api/trending/cross-platform?limit=5', initCP),
           fetchFromApi<VelocityItem[]>('/api/trending/velocity?limit=5', initVel),
           fetchFromApi<GenreHeatRow[]>('/api/trending/heatmap', initHeat),
@@ -140,6 +166,11 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         setDeezer(tDeezer)
         setSoundcloud(tSoundcloud)
         setBillboard(tBillboard)
+        setBandcamp(tBandcamp)
+        setAudiomack(tAudiomack)
+        setGenius(tGenius)
+        setMusixmatch(tMusixmatch)
+        setIheart(tIheart)
         setCrossPlatform(tCP)
         setVelocity(tVel)
         setHeatmap(tHeat)
@@ -157,7 +188,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
-  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music, Deezer (3 cols) — Row 3: SoundCloud, Billboard (2 cols)
+  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music, Deezer (3 cols) — Row 3: SoundCloud, Billboard, Bandcamp (3 cols) — Row 4: Audiomack, Genius, Musixmatch (3 cols) — Row 5: iHeartRadio (1 col)
   const row1 = [
     { platform: 'tiktok' as const, items: tiktok },
     { platform: 'twitter' as const, items: twitter },
@@ -171,9 +202,18 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const row3 = [
     { platform: 'soundcloud' as const, items: soundcloud },
     { platform: 'billboard' as const, items: billboard },
+    { platform: 'bandcamp' as const, items: bandcamp },
+  ]
+  const row4 = [
+    { platform: 'audiomack' as const, items: audiomack },
+    { platform: 'genius' as const, items: genius },
+    { platform: 'musixmatch' as const, items: musixmatch },
+  ]
+  const row5 = [
+    { platform: 'iheart' as const, items: iheart },
   ]
 
-  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2), ...deezer.slice(0,2), ...soundcloud.slice(0,1), ...billboard.slice(0,1)]
+  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2), ...deezer.slice(0,2), ...soundcloud.slice(0,1), ...billboard.slice(0,1), ...bandcamp.slice(0,1), ...audiomack.slice(0,1), ...genius.slice(0,1), ...musixmatch.slice(0,1), ...iheart.slice(0,1)]
 
   // Format the last updated time
   const updatedLabel = lastUpdated
@@ -202,7 +242,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                       background: `rgba(${platRgb(item.platform)},0.15)`,
                       color: platTextColor(item.platform),
                     }}>
-                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : item.platform === 'deezer' ? 'DZ' : item.platform === 'soundcloud' ? 'SC' : item.platform === 'billboard' ? 'BB' : 'YT'}
+                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : item.platform === 'deezer' ? 'DZ' : item.platform === 'soundcloud' ? 'SC' : item.platform === 'billboard' ? 'BB' : item.platform === 'bandcamp' ? 'BC' : item.platform === 'audiomack' ? 'AK' : item.platform === 'genius' ? 'GN' : item.platform === 'musixmatch' ? 'MX' : item.platform === 'iheart' ? 'IH' : 'YT'}
                   </span>
                   <span className="font-black text-[#ff2d6b]">#{item.rank}</span>
                   {item.songTitle} — {item.artistName}
@@ -262,6 +302,11 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   { id: 'deezer', label: 'Deezer', color: '#A238FF' },
                   { id: 'soundcloud', label: 'SoundCloud', color: '#FF5500' },
                   { id: 'billboard', label: 'Billboard', color: '#E60026' },
+                  { id: 'bandcamp', label: 'Bandcamp', color: '#629AA9' },
+                  { id: 'audiomack', label: 'Audiomack', color: '#FFA200' },
+                  { id: 'genius', label: 'Genius', color: '#FFFF64' },
+                  { id: 'musixmatch', label: 'Musixmatch', color: '#FF6E40' },
+                  { id: 'iheart', label: 'iHeart', color: '#C6002B' },
                 ].map(p => (
                   <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
                     className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap',
@@ -293,12 +338,28 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         ))}
       </div>
 
-      {/* Row 3: SoundCloud, Billboard — 2 columns */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Row 3: SoundCloud, Billboard, Bandcamp — 3 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-3 gap-5">
         {row3.map(({ platform, items }) => (
           <TrendingColumn key={platform} platform={platform} items={items} />
         ))}
       </div>
+
+      {/* Row 4: Audiomack, Genius, Musixmatch — 3 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+        {row4.map(({ platform, items }) => (
+          <TrendingColumn key={platform} platform={platform} items={items} />
+        ))}
+      </div>
+
+      {/* Row 5: iHeartRadio — 1 column */}
+      {iheart.length > 0 && (
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+          {row5.map(({ platform, items }) => (
+            <TrendingColumn key={platform} platform={platform} items={items} />
+          ))}
+        </div>
+      )}
 
       {/* Bottom: Velocity + Cross-platform — stacks on mobile */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 sm:pb-7 grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -48,7 +48,7 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
         return readKV(env, `trending:${platform}`, limit)
       }
       // Return all trending platforms
-      const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard']
+      const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart']
       const results: Record<string, any[]> = {}
       let updatedAt = ''
       for (const p of platforms) {
@@ -111,6 +111,11 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
     // ── Scrape Status ────────────────────────────────────────
     case 'scrape/status': {
       return readKV(env, 'scrape:meta')
+    }
+
+    // ── Genius Enrichment ────────────────────────────────────
+    case 'enrichment/genius': {
+      return readKV(env, 'enrichment:genius')
     }
 
     default:

@@ -24,7 +24,7 @@ interface TrendingEntry {
   surgePercent?: number
 }
 
-const PLATFORMS = ['tiktok', 'youtube', 'spotify', 'apple', 'twitter']
+const PLATFORMS = ['tiktok', 'youtube', 'spotify', 'apple', 'twitter', 'deezer', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart']
 
 export async function computeCrossPlatform(env: Env): Promise<void> {
   console.log('[cross-platform] Computing...')

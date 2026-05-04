@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { getChartEntries, getNewReleases, getTrending, getTopArtists } from '@/lib/data'
-import { formatCount } from '@/lib/utils'
 import { SectionHeader } from '@/components/ui'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { ChartsGrid } from '@/components/charts/ChartsGrid'
@@ -34,41 +33,73 @@ export default async function HomePage() {
 
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7">
         {/* Charts */}
-        <section className="py-10 sm:py-20">
-          <SectionHeader
-            title="Charts"
-            icon={<ChartsIcon />}
-            iconBg="var(--green-dim)"
-            action={{ label: 'All charts', href: '/charts' }}
-          />
-          <ChartsGrid spotifyEntries={spotifyChart} appleEntries={appleChart} />
-        </section>
+        {spotifyChart.length > 0 || appleChart.length > 0 ? (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="Charts"
+              icon={<ChartsIcon />}
+              iconBg="var(--green-dim)"
+              action={{ label: 'All charts', href: '/charts' }}
+            />
+            <ChartsGrid spotifyEntries={spotifyChart} appleEntries={appleChart} />
+          </section>
+        ) : (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="Charts"
+              icon={<ChartsIcon />}
+              iconBg="var(--green-dim)"
+              action={{ label: 'All charts', href: '/charts' }}
+            />
+            <div className="text-center py-12 text-[var(--text3)]">
+              <p className="text-[14px] font-medium">Loading charts data...</p>
+              <p className="text-[12px] mt-1">Data refreshes every 6 hours from live sources.</p>
+            </div>
+          </section>
+        )}
 
         {/* Trending */}
-        <section className="py-10 sm:py-20">
-          <SectionHeader
-            title="Trending on Social"
-            icon={<TrendingIcon />}
-            iconBg="rgba(255,45,107,0.1)"
-            action={{ label: 'All trending', href: '/trending' }}
-          />
-          <TrendingRow
-            tiktok={tiktokTrending}
-            twitter={twitterTrending}
-            youtube={youtubeTrending}
-          />
-        </section>
+        {tiktokTrending.length > 0 || twitterTrending.length > 0 || youtubeTrending.length > 0 ? (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="Trending on Social"
+              icon={<TrendingIcon />}
+              iconBg="rgba(255,45,107,0.1)"
+              action={{ label: 'All trending', href: '/trending' }}
+            />
+            <TrendingRow
+              tiktok={tiktokTrending}
+              twitter={twitterTrending}
+              youtube={youtubeTrending}
+            />
+          </section>
+        ) : (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="Trending on Social"
+              icon={<TrendingIcon />}
+              iconBg="rgba(255,45,107,0.1)"
+              action={{ label: 'All trending', href: '/trending' }}
+            />
+            <div className="text-center py-12 text-[var(--text3)]">
+              <p className="text-[14px] font-medium">Loading trending data...</p>
+              <p className="text-[12px] mt-1">Trending data refreshes every 2 hours.</p>
+            </div>
+          </section>
+        )}
 
         {/* New Releases */}
-        <section className="py-10 sm:py-20">
-          <SectionHeader
-            title="New Releases"
-            icon={<ReleasesIcon />}
-            iconBg="var(--blue-dim)"
-            action={{ label: 'All releases', href: '/new-releases' }}
-          />
-          <ReleasesGrid albums={newReleases} />
-        </section>
+        {newReleases.length > 0 ? (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="New Releases"
+              icon={<ReleasesIcon />}
+              iconBg="var(--blue-dim)"
+              action={{ label: 'All releases', href: '/new-releases' }}
+            />
+            <ReleasesGrid albums={newReleases} />
+          </section>
+        ) : null}
 
         {/* Genres */}
         <section className="py-10 sm:py-20">
@@ -77,15 +108,17 @@ export default async function HomePage() {
         </section>
 
         {/* Top Artists */}
-        <section className="py-10 sm:py-20">
-          <SectionHeader
-            title="Top Artists"
-            icon={<ArtistIcon />}
-            iconBg="var(--purple-dim)"
-            action={{ label: 'All artists', href: '/artists' }}
-          />
-          <ArtistsRow artists={topArtists} />
-        </section>
+        {topArtists.length > 0 ? (
+          <section className="py-10 sm:py-20">
+            <SectionHeader
+              title="Top Artists"
+              icon={<ArtistIcon />}
+              iconBg="var(--purple-dim)"
+              action={{ label: 'All artists', href: '/artists' }}
+            />
+            <ArtistsRow artists={topArtists} />
+          </section>
+        ) : null}
       </div>
     </div>
   )

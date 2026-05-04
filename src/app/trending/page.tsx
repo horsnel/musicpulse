@@ -8,11 +8,11 @@ import { TrendingPageClient } from './TrendingPageClient'
 export const metadata: Metadata = {
   title: 'Trending Now',
   description:
-    'Live trending music data from TikTok, Twitter/X, YouTube, Spotify, Apple Music, Deezer, SoundCloud and Billboard — updated every 2 hours. Discover viral songs, trending hashtags, and rising artists.',
+    'Live trending music data from TikTok, Twitter/X, YouTube, Spotify, Apple Music, Deezer, SoundCloud, Billboard, Bandcamp, Audiomack, Genius, Musixmatch, and iHeartRadio — updated every 2 hours.',
 }
 
 export default async function TrendingPage() {
-  const [tiktok, twitter, youtube, spotify, apple, deezer, soundcloud, billboard, crossPlatform, velocity, heatmap] =
+  const [tiktok, twitter, youtube, spotify, apple, deezer, soundcloud, billboard, bandcamp, audiomack, genius, musixmatch, iheart, crossPlatform, velocity, heatmap] =
     await Promise.all([
       getTrending('tiktok', 8),
       getTrending('twitter', 8),
@@ -22,6 +22,11 @@ export default async function TrendingPage() {
       getTrending('deezer', 5),
       getTrending('soundcloud', 5),
       getTrending('billboard', 5),
+      getTrending('bandcamp', 5),
+      getTrending('audiomack', 5),
+      getTrending('genius', 5),
+      getTrending('musixmatch', 5),
+      getTrending('iheart', 5),
       getCrossPlatformScores(5),
       getVelocityItems(5),
       getGenreHeatmap(),
@@ -37,6 +42,11 @@ export default async function TrendingPage() {
       deezer={deezer}
       soundcloud={soundcloud}
       billboard={billboard}
+      bandcamp={bandcamp}
+      audiomack={audiomack}
+      genius={genius}
+      musixmatch={musixmatch}
+      iheart={iheart}
       crossPlatform={crossPlatform}
       velocity={velocity}
       heatmap={heatmap}

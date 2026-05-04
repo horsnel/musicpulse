@@ -22,6 +22,10 @@ import { scrapeSetlistFm } from './setlistfm'
 import { scrapeReddit } from './reddit'
 import { scrapeITunes } from './itunes'
 import { scrapeMusicBrainz } from './musicbrainz'
+import { scrapeBandcamp } from './bandcamp'
+import { scrapeAudiomack } from './audiomack'
+import { scrapeMusixmatch } from './musixmatch'
+import { scrapeIHeartRadio } from './iheartradio'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
 import { computeVelocity } from '../normalizers/velocity'
 import { computeHeatmap } from '../normalizers/heatmap'
@@ -42,6 +46,12 @@ export async function scrapeAll(env: Env): Promise<void> {
     scrapeTikTok(env),
     scrapeReddit(env),      // Generates twitter trending data
 
+    // New platforms (no key needed)
+    scrapeBandcamp(env),
+    scrapeAudiomack(env),
+    scrapeIHeartRadio(env),
+    scrapeMusixmatch(env),
+
     // Enrichment (no key needed)
     scrapeITunes(env),
     scrapeMusicBrainz(env),
@@ -56,7 +66,9 @@ export async function scrapeAll(env: Env): Promise<void> {
   // Log results
   const names = [
     'spotify-charts', 'apple-rss', 'deezer', 'youtube',
-    'tiktok', 'reddit', 'itunes', 'musicbrainz',
+    'tiktok', 'reddit',
+    'bandcamp', 'audiomack', 'iheartradio', 'musixmatch',
+    'itunes', 'musicbrainz',
     'lastfm', 'theaudiodb', 'genius', 'setlistfm',
   ]
   results.forEach((r, i) => {
@@ -105,6 +117,11 @@ export async function scrapeTrending(env: Env): Promise<void> {
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
     scrapeSetlistFm(env),
+    scrapeGenius(env),
+    scrapeBandcamp(env),
+    scrapeAudiomack(env),
+    scrapeIHeartRadio(env),
+    scrapeMusixmatch(env),
   ])
 
   // Recompute derived data

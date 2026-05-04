@@ -20,6 +20,11 @@ const PLATFORM_META: Record<TrendingPlatform, { label: string; color: string; di
   soundcloud: { label: 'SoundCloud',  color: '#FF5500',  dim: 'rgba(255,85,0,0.1)' },
   billboard:  { label: 'Billboard',   color: '#E60026',  dim: 'rgba(230,0,38,0.1)' },
   deezer:     { label: 'Deezer',      color: '#A238FF',  dim: 'rgba(162,56,255,0.1)' },
+  bandcamp:   { label: 'Bandcamp',    color: '#629AA9',  dim: 'rgba(98,154,169,0.1)' },
+  audiomack:  { label: 'Audiomack',   color: '#FFA200',  dim: 'rgba(255,162,0,0.1)' },
+  genius:     { label: 'Genius',      color: '#FFFF64',  dim: 'rgba(255,255,100,0.1)' },
+  musixmatch: { label: 'Musixmatch',  color: '#FF6E40',  dim: 'rgba(255,110,64,0.1)' },
+  iheart:     { label: 'iHeartRadio', color: '#C6002B',  dim: 'rgba(198,0,43,0.1)' },
 }
 
 const BADGE_VARIANT_MAP: Record<string, 'green' | 'pink' | 'gold' | 'purple' | 'blue'> = {
