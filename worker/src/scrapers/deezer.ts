@@ -105,6 +105,10 @@ export async function scrapeDeezer(env: Env): Promise<void> {
         sparklineData: generateSparkline(i + 1),
       }))
 
+      // Store as Deezer charts (primary)
+      const deezerEntries = chartEntries.map(e => ({ ...e, platform: 'deezer' as const }))
+      await writeKV(env, `charts:deezer:${playlist.id}`, deezerEntries)
+
       // Write as Spotify chart fallback (when no Spotify API keys)
       const existingSpotify = await env.DATA.get(`charts:spotify:${playlist.id}`)
       if (!existingSpotify) {
@@ -137,27 +141,31 @@ export async function scrapeDeezer(env: Env): Promise<void> {
 
         await writeKV(env, 'artists:top', topArtists)
 
+        // Deezer trending (primary)
+        const deezerTrending = tracks.slice(0, 8).map((track, i) => ({
+          id: `deezer-trend-${i}`,
+          rank: i + 1,
+          rankChange: 0,
+          isNew: i === 0,
+          platform: 'deezer' as const,
+          songId: `deezer:${track.id}`,
+          songTitle: track.title,
+          artistName: track.artist.name,
+          artEmoji: getArtEmoji(),
+          artGradient: getArtGradient(i),
+          albumCoverUrl: track.album?.cover_xl || track.album?.cover_big,
+          metric: (track.rank || 100) * 10000,
+          metricUnit: 'streams',
+          badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
+          surgePercent: Math.max(10, 100 - i * 10),
+          updatedAt: new Date().toISOString(),
+        }))
+        await writeKV(env, 'trending:deezer', deezerTrending)
+
         // Spotify trending (Deezer as fallback)
         const existingTrending = await env.DATA.get('trending:spotify')
         if (!existingTrending) {
-          const spotifyTrending = tracks.slice(0, 8).map((track, i) => ({
-            id: `spotify-trend-${i}`,
-            rank: i + 1,
-            rankChange: 0,
-            isNew: i === 0,
-            platform: 'spotify' as const,
-            songId: `deezer:${track.id}`,
-            songTitle: track.title,
-            artistName: track.artist.name,
-            artEmoji: getArtEmoji(),
-            artGradient: getArtGradient(i),
-            albumCoverUrl: track.album?.cover_xl || track.album?.cover_big,
-            metric: (track.rank || 100) * 10000,
-            metricUnit: 'streams',
-            badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
-            surgePercent: Math.max(10, 100 - i * 10),
-            updatedAt: new Date().toISOString(),
-          }))
+          const spotifyTrending = deezerTrending.map(t => ({ ...t, platform: 'spotify' as const, id: t.id.replace('deezer-', 'spotify-') }))
           await writeKV(env, 'trending:spotify', spotifyTrending)
         }
       }

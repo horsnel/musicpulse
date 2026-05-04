@@ -281,6 +281,13 @@ const MOCK_TRENDING: Record<TrendingPlatform, TrendingItem[]> = {
     { id: 'bb1', rank: 1, rankChange: 0, isNew: false, platform: 'billboard', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 92000000, metricUnit: 'units', badge: 'hot', surgePercent: 100, updatedAt: '2025-04-27T12:00:00Z' },
     { id: 'bb2', rank: 2, rankChange: 2, isNew: false, platform: 'billboard', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 78000000, metricUnit: 'units', badge: 'rising', surgePercent: 85, updatedAt: '2025-04-27T12:00:00Z' },
   ],
+  deezer: [
+    { id: 'dz1', rank: 1, rankChange: 0, isNew: false, platform: 'deezer', songTitle: 'Die With A Smile', artistName: 'Lady Gaga, Bruno Mars', artEmoji: '\u{1F3B5}', artGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', metric: 9800000, metricUnit: 'streams', badge: 'hot', surgePercent: 95, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'dz2', rank: 2, rankChange: 1, isNew: false, platform: 'deezer', songTitle: 'APT.', artistName: 'Rose, Bruno Mars', artEmoji: '\u{1F338}', artGradient: 'linear-gradient(135deg,#642b73,#c6426e)', metric: 8400000, metricUnit: 'streams', badge: 'rising', surgePercent: 82, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'dz3', rank: 3, rankChange: 0, isNew: false, platform: 'deezer', songTitle: 'BIRDS OF A FEATHER', artistName: 'Billie Eilish', artEmoji: '\u{1F3B6}', artGradient: 'linear-gradient(135deg,#2d1b69,#11998e)', metric: 7200000, metricUnit: 'streams', badge: null, surgePercent: 68, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'dz4', rank: 4, rankChange: 3, isNew: false, platform: 'deezer', songTitle: 'Espresso', artistName: 'Sabrina Carpenter', artEmoji: '\u{2615}', artGradient: 'linear-gradient(135deg,#134e5e,#71b280)', metric: 6100000, metricUnit: 'streams', badge: null, surgePercent: 55, updatedAt: '2025-04-27T12:00:00Z' },
+    { id: 'dz5', rank: 5, rankChange: -1, isNew: false, platform: 'deezer', songTitle: 'Not Like Us', artistName: 'Kendrick Lamar', artEmoji: '\u{1F3A4}', artGradient: 'linear-gradient(135deg,#4b1248,#f10711)', metric: 5300000, metricUnit: 'streams', badge: null, surgePercent: 42, updatedAt: '2025-04-27T12:00:00Z' },
+  ],
 }
 
 const MOCK_CROSS_PLATFORM: CrossPlatformScore[] = [

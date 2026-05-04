@@ -19,6 +19,7 @@ const PLATFORM_META: Record<TrendingPlatform, { label: string; color: string; di
   apple:      { label: 'Apple Music', color: '#fc3c44',  dim: 'rgba(252,60,68,0.1)' },
   soundcloud: { label: 'SoundCloud',  color: '#FF5500',  dim: 'rgba(255,85,0,0.1)' },
   billboard:  { label: 'Billboard',   color: '#E60026',  dim: 'rgba(230,0,38,0.1)' },
+  deezer:     { label: 'Deezer',      color: '#A238FF',  dim: 'rgba(162,56,255,0.1)' },
 }
 
 const BADGE_VARIANT_MAP: Record<string, 'green' | 'pink' | 'gold' | 'purple' | 'blue'> = {

@@ -75,7 +75,7 @@ export interface Song {
 }
 
 // ─── CHART ENTRY ───────────────────────────────────────────────
-export type Platform = 'spotify' | 'apple' | 'youtube' | 'shazam' | 'billboard'
+export type Platform = 'spotify' | 'apple' | 'youtube' | 'shazam' | 'billboard' | 'deezer'
 export type ChartRegion = 'global' | 'nigeria' | 'us' | 'uk' | 'africa' | 'brazil' | 'korea' | 'germany' | 'south-africa'
 
 export interface ChartEntry {
@@ -96,7 +96,7 @@ export interface ChartEntry {
 }
 
 // ─── TRENDING ──────────────────────────────────────────────────
-export type TrendingPlatform = 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'soundcloud' | 'billboard'
+export type TrendingPlatform = 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'soundcloud' | 'billboard' | 'deezer'
 export type TrendBadge = 'hot' | 'rising' | 'new' | 'peak' | null
 
 export interface TrendingItem {

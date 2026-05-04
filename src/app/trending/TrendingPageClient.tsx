@@ -32,6 +32,9 @@ interface Props {
   youtube: TrendingItem[]
   spotify: TrendingItem[]
   apple: TrendingItem[]
+  deezer: TrendingItem[]
+  soundcloud: TrendingItem[]
+  billboard: TrendingItem[]
   crossPlatform: CrossPlatformScore[]
   velocity: VelocityItem[]
   heatmap: GenreHeatRow[]
@@ -43,6 +46,9 @@ const PLAT_META: Record<string, { label: string; sub: string; color: string; upd
   youtube: { label: 'YouTube Music',   sub: 'Top Music Videos',   color: '#ff3333',  updated: '2h ago' },
   spotify: { label: 'Spotify',         sub: 'Top Streaming',      color: '#1DB954',  updated: '45m ago' },
   apple:   { label: 'Apple Music',     sub: 'Top Plays',          color: '#fc3c44',  updated: '1h ago' },
+  deezer:  { label: 'Deezer',          sub: 'Top Charts',         color: '#A238FF',  updated: '1h ago' },
+  soundcloud: { label: 'SoundCloud',   sub: 'Trending Tracks',    color: '#FF5500',  updated: '2h ago' },
+  billboard:  { label: 'Billboard',    sub: 'Hot 100',            color: '#E60026',  updated: '1d ago' },
 }
 
 // Helper to get platform color for rgba backgrounds
@@ -53,12 +59,16 @@ function platRgb(platform: string) {
     case 'youtube': return '255,51,51'
     case 'spotify': return '29,185,84'
     case 'apple':   return '252,60,68'
+    case 'deezer':  return '162,56,255'
+    case 'soundcloud': return '255,85,0'
+    case 'billboard':  return '230,0,38'
     default:        return '255,255,255'
   }
 }
 
 function platTextColor(platform: string) {
-  return platform === 'twitter' ? '#e0e0e0' : PLAT_META[platform]?.color ?? '#fff'
+  if (platform === 'twitter') return '#e0e0e0'
+  return PLAT_META[platform]?.color ?? '#fff'
 }
 
 // ── Client-side API fetch ─────────────────────────────────────
@@ -81,8 +91,8 @@ async function fetchFromApi<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
-export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
-  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple'>('all')
+export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, deezer: initDeezer, soundcloud: initSoundcloud, billboard: initBillboard, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
+  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'deezer' | 'soundcloud' | 'billboard'>('all')
   const [timeRange, setTimeRange] = useState('Now')
   const [liveData, setLiveData] = useState(false)
 
@@ -92,6 +102,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const [youtube, setYoutube] = useState(initYoutube)
   const [spotify, setSpotify] = useState(initSpotify)
   const [apple, setApple] = useState(initApple)
+  const [deezer, setDeezer] = useState(initDeezer)
+  const [soundcloud, setSoundcloud] = useState(initSoundcloud)
+  const [billboard, setBillboard] = useState(initBillboard)
   const [crossPlatform, setCrossPlatform] = useState(initCP)
   const [velocity, setVelocity] = useState(initVel)
   const [heatmap, setHeatmap] = useState(initHeat)
@@ -103,6 +116,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
       try {
         const [
           tTiktok, tTwitter, tYoutube, tSpotify, tApple,
+          tDeezer, tSoundcloud, tBillboard,
           tCP, tVel, tHeat,
         ] = await Promise.all([
           fetchFromApi<TrendingItem[]>('/api/trending?platform=tiktok&limit=8', initTiktok),
@@ -110,6 +124,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           fetchFromApi<TrendingItem[]>('/api/trending?platform=youtube&limit=8', initYoutube),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=spotify&limit=8', initSpotify),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=apple&limit=8', initApple),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=deezer&limit=8', initDeezer),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=soundcloud&limit=8', initSoundcloud),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=billboard&limit=8', initBillboard),
           fetchFromApi<CrossPlatformScore[]>('/api/trending/cross-platform?limit=5', initCP),
           fetchFromApi<VelocityItem[]>('/api/trending/velocity?limit=5', initVel),
           fetchFromApi<GenreHeatRow[]>('/api/trending/heatmap', initHeat),
@@ -120,6 +137,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         setYoutube(tYoutube)
         setSpotify(tSpotify)
         setApple(tApple)
+        setDeezer(tDeezer)
+        setSoundcloud(tSoundcloud)
+        setBillboard(tBillboard)
         setCrossPlatform(tCP)
         setVelocity(tVel)
         setHeatmap(tHeat)
@@ -137,7 +157,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
-  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music (2 cols)
+  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music, Deezer (3 cols) — Row 3: SoundCloud, Billboard (2 cols)
   const row1 = [
     { platform: 'tiktok' as const, items: tiktok },
     { platform: 'twitter' as const, items: twitter },
@@ -146,9 +166,14 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const row2 = [
     { platform: 'spotify' as const, items: spotify },
     { platform: 'apple' as const, items: apple },
+    { platform: 'deezer' as const, items: deezer },
+  ]
+  const row3 = [
+    { platform: 'soundcloud' as const, items: soundcloud },
+    { platform: 'billboard' as const, items: billboard },
   ]
 
-  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2)]
+  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2), ...deezer.slice(0,2), ...soundcloud.slice(0,1), ...billboard.slice(0,1)]
 
   // Format the last updated time
   const updatedLabel = lastUpdated
@@ -177,7 +202,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                       background: `rgba(${platRgb(item.platform)},0.15)`,
                       color: platTextColor(item.platform),
                     }}>
-                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : 'YT'}
+                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : item.platform === 'deezer' ? 'DZ' : item.platform === 'soundcloud' ? 'SC' : item.platform === 'billboard' ? 'BB' : 'YT'}
                   </span>
                   <span className="font-black text-[#ff2d6b]">#{item.rank}</span>
                   {item.songTitle} — {item.artistName}
@@ -234,6 +259,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   { id: 'youtube', label: 'YouTube', color: '#ff3333' },
                   { id: 'spotify', label: 'Spotify', color: '#1DB954' },
                   { id: 'apple', label: 'Apple Music', color: '#fc3c44' },
+                  { id: 'deezer', label: 'Deezer', color: '#A238FF' },
+                  { id: 'soundcloud', label: 'SoundCloud', color: '#FF5500' },
+                  { id: 'billboard', label: 'Billboard', color: '#E60026' },
                 ].map(p => (
                   <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
                     className={cn('flex items-center gap-1.5 sm:gap-2 px-3 sm:px-[18px] py-[7px] sm:py-[9px] rounded-full text-[11px] sm:text-[13px] font-bold transition-all border cursor-pointer whitespace-nowrap',
@@ -258,9 +286,16 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         ))}
       </div>
 
-      {/* Row 2: Spotify, Apple Music — 2 columns */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Row 2: Spotify, Apple Music, Deezer — 3 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-3 gap-5">
         {row2.map(({ platform, items }) => (
+          <TrendingColumn key={platform} platform={platform} items={items} />
+        ))}
+      </div>
+
+      {/* Row 3: SoundCloud, Billboard — 2 columns */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        {row3.map(({ platform, items }) => (
           <TrendingColumn key={platform} platform={platform} items={items} />
         ))}
       </div>

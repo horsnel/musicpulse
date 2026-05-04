@@ -12,6 +12,7 @@ const PLATFORMS: Array<{ id: Platform; label: string; color: string }> = [
   { id: 'spotify',   label: 'Spotify Daily Top 200', color: '#1DB954' },
   { id: 'apple',     label: 'Apple Music Top 100',   color: '#fc3c44' },
   { id: 'youtube',   label: 'YouTube Music',          color: '#ff4444' },
+  { id: 'deezer',    label: 'Deezer Top Hits',        color: '#A238FF' },
   { id: 'shazam',    label: 'Shazam Top 200',         color: '#0e72ed' },
   { id: 'billboard', label: 'Billboard Hot 100',      color: '#e60026' },
 ]

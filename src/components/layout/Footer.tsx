@@ -19,6 +19,7 @@ const FOOTER_COLS = [
       { label: 'Spotify Charts',      href: '/charts/spotify' },
       { label: 'Apple Music Top 100', href: '/charts/apple' },
       { label: 'YouTube Music',       href: '/charts/youtube' },
+      { label: 'Deezer Top Hits',     href: '/charts/deezer' },
       { label: 'Billboard Hot 100',   href: '/charts/billboard' },
       { label: 'Country Charts',      href: '/charts/countries' },
     ],
