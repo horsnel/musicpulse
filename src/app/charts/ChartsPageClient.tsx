@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import type { ChartEntry, Platform, ChartRegion } from '@/types'
 import { formatCount, REGION_META } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -29,9 +30,14 @@ interface Props {
 }
 
 export function ChartsPageClient({ initialEntries, countryCharts: initialCountryCharts, initialPlatform, initialRegion }: Props) {
+  const searchParams = useSearchParams()
+  const urlRegion = searchParams.get('region')
+  const validUrlRegion = urlRegion && (REGIONS as readonly string[]).includes(urlRegion) ? urlRegion as ChartRegion : null
+  const effectiveInitialRegion = validUrlRegion ?? initialRegion
+
   const [platform, setPlatform] = useState<Platform>(initialPlatform)
-  const [region, setRegion] = useState<ChartRegion>(initialRegion)
-  const [regionIdx, setRegionIdx] = useState(0)
+  const [region, setRegion] = useState<ChartRegion>(effectiveInitialRegion)
+  const [regionIdx, setRegionIdx] = useState(() => REGIONS.indexOf(effectiveInitialRegion as any) >= 0 ? REGIONS.indexOf(effectiveInitialRegion as any) : 0)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [posRange, setPosRange] = useState('Top 50')
   const [entries, setEntries] = useState<ChartEntry[]>(initialEntries)

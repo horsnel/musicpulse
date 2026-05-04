@@ -2,20 +2,12 @@ import type { Metadata } from 'next'
 import { getTopArtists } from '@/lib/data'
 import { formatCount } from '@/lib/utils'
 import Link from 'next/link'
+import { ArtistAvatar } from '@/components/artist/ArtistAvatar'
 
 export const metadata: Metadata = {
   title: 'Top Artists',
   description: 'Explore the world\'s top music artists — monthly listeners, genres, and chart performance from Spotify, Apple Music, and more.',
 }
-
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#642b73,#c6426e)',
-  'linear-gradient(135deg,#1a1a2e,#16213e)',
-  'linear-gradient(135deg,#134e5e,#71b280)',
-  'linear-gradient(135deg,#4b1248,#f10711)',
-  'linear-gradient(135deg,#2d1b69,#11998e)',
-  'linear-gradient(135deg,#1a4a6e,#2196f3)',
-]
 
 export default async function ArtistsPage() {
   const artists = await getTopArtists(12)
@@ -45,63 +37,47 @@ export default async function ArtistsPage() {
 
         {/* Artists grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 sm:gap-8">
-          {artists.map((artist, i) => {
-            const gradient = AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]
-            const initials = artist.name
-              .split(/[\s,]+/)
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((w) => w[0])
-              .join('')
-              .toUpperCase()
-
-            return (
-              <Link
-                key={artist.id}
-                href={`/artists/${artist.slug}`}
-                className="group no-underline text-center"
-              >
-                {/* Avatar */}
-                <div className="relative mb-4 inline-block">
-                  <div
-                    className="w-[90px] h-[90px] sm:w-[140px] sm:h-[140px] rounded-full flex items-center justify-center text-[22px] sm:text-[30px] font-extrabold text-white/90 transition-transform duration-300 group-hover:scale-105 mx-auto"
-                    style={{ background: gradient }}
-                  >
-                    {initials}
-                  </div>
-                  {artist.verified && (
-                    <div className="absolute bottom-1 right-3 w-6 h-6 rounded-full bg-[var(--blue)] flex items-center justify-center border-2 border-[var(--bg)]">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="#fff">
-                        <path d="M4.5 8.3L2.2 6l1-1 1.3 1.3 3.3-3.3 1 1L4.5 8.3z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <p className="text-[14px] font-semibold text-[var(--text)] truncate group-hover:text-[var(--green)] transition-colors">
-                  {artist.name}
-                </p>
-                <p className="text-[12px] text-[var(--text3)] mt-1">
-                  {formatCount(artist.monthlyListeners)} listeners
-                </p>
-
-                {/* Genre tags */}
-                {artist.genres.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1 mt-2">
-                    {artist.genres.slice(0, 2).map((genre) => (
-                      <span
-                        key={genre}
-                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--bg3)] text-[var(--text3)]"
-                      >
-                        {genre}
-                      </span>
-                    ))}
+          {artists.map((artist, i) => (
+            <Link
+              key={artist.id}
+              href={`/artists/${artist.slug}`}
+              className="group no-underline text-center"
+            >
+              {/* Avatar */}
+              <div className="relative mb-4 inline-block">
+                <ArtistAvatar name={artist.name} imageUrl={artist.imageUrl} index={i} />
+                {artist.verified && (
+                  <div className="absolute bottom-1 right-3 w-6 h-6 rounded-full bg-[var(--blue)] flex items-center justify-center border-2 border-[var(--bg)]">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="#fff">
+                      <path d="M4.5 8.3L2.2 6l1-1 1.3 1.3 3.3-3.3 1 1L4.5 8.3z" />
+                    </svg>
                   </div>
                 )}
-              </Link>
-            )
-          })}
+              </div>
+
+              {/* Info */}
+              <p className="text-[14px] font-semibold text-[var(--text)] truncate group-hover:text-[var(--green)] transition-colors">
+                {artist.name}
+              </p>
+              <p className="text-[12px] text-[var(--text3)] mt-1">
+                {formatCount(artist.monthlyListeners)} listeners
+              </p>
+
+              {/* Genre tags */}
+              {artist.genres.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-1 mt-2">
+                  {artist.genres.slice(0, 2).map((genre) => (
+                    <span
+                      key={genre}
+                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--bg3)] text-[var(--text3)]"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

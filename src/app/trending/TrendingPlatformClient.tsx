@@ -35,8 +35,29 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
           </p>
         </div>
 
+        {/* Empty state */}
+        {items.length === 0 && (
+          <div className="mp-card">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: `${color}18` }}>
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="11" stroke={color} strokeWidth="1.5" fill="none" />
+                  <path d="M10 18V13M14 18V10M18 18V15" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className="text-[16px] sm:text-[18px] font-bold text-[var(--text)] mb-2">Data Coming Soon</h3>
+              <p className="text-[13px] sm:text-[14px] text-[var(--text3)] max-w-[320px] leading-relaxed">
+                We&apos;re currently collecting data for {label}. Check back in a few hours — our scrapers refresh every 2 hours.
+              </p>
+              <a href="/trending" className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-[var(--green)] no-underline hover:underline">
+                ← Back to Trending
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* List */}
-        <div className="mp-card">
+        {items.length > 0 && <div className="mp-card">
           <div className="hidden sm:grid items-center px-[22px] h-10 border-b border-[var(--border)] bg-[var(--bg3)]"
             style={{ gridTemplateColumns: '50px 48px 1fr 120px 90px' }}>
             {['#', '', 'Song', 'Change', 'Metric'].map((h, i) => (
@@ -59,9 +80,13 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
                     {item.isNew ? 'NEW' : item.rankChange > 0 ? `↑${item.rankChange}` : item.rankChange < 0 ? `↓${Math.abs(item.rankChange)}` : '—'}
                   </span>
                 </div>
-                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)]"
-                  style={{ background: item.artGradient ?? 'var(--bg3)' }}>
-                  {item.artEmoji}
+                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] overflow-hidden"
+                  style={{ background: item.albumCoverUrl ? 'var(--bg3)' : (item.artGradient ?? 'var(--bg3)') }}>
+                  {item.albumCoverUrl ? (
+                    <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    item.artEmoji ?? '🎵'
+                  )}
                 </div>
                 <div className="pl-3 min-w-0">
                   <div className="flex items-center gap-2">
@@ -101,9 +126,13 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
                     {item.isNew ? 'NEW' : item.rankChange > 0 ? `↑${item.rankChange}` : item.rankChange < 0 ? `↓${Math.abs(item.rankChange)}` : '—'}
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0"
-                  style={{ background: item.artGradient ?? 'var(--bg3)' }}>
-                  {item.artEmoji}
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0 overflow-hidden"
+                  style={{ background: item.albumCoverUrl ? 'var(--bg3)' : (item.artGradient ?? 'var(--bg3)') }}>
+                  {item.albumCoverUrl ? (
+                    <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    item.artEmoji ?? '🎵'
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
@@ -127,7 +156,7 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
               </div>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )

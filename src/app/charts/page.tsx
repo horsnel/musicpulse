@@ -4,8 +4,7 @@ import { ChartsPageClient } from './ChartsPageClient'
 
 export const metadata: Metadata = {
   title: 'Charts',
-  description:
-    'Real-time global music charts — Spotify Daily Top 200, Apple Music Top 100, YouTube Music, Shazam, and Billboard. Updated every hour.',
+  description: 'Real-time global music charts — Spotify Daily Top 200, Apple Music Top 100, YouTube Music, Shazam, and Billboard. Updated every hour.',
 }
 
 export default async function ChartsPage() {

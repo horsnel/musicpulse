@@ -33,8 +33,29 @@ export function ChartPlatformPageClient({ platform, label, color, regionName, en
           </p>
         </div>
 
+        {/* Empty state */}
+        {entries.length === 0 && (
+          <div className="mp-card">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: `${color}18` }}>
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="11" stroke={color} strokeWidth="1.5" fill="none" />
+                  <path d="M10 18V13M14 18V10M18 18V15" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className="text-[16px] sm:text-[18px] font-bold text-[var(--text)] mb-2">Data Coming Soon</h3>
+              <p className="text-[13px] sm:text-[14px] text-[var(--text3)] max-w-[320px] leading-relaxed">
+                We&apos;re currently collecting chart data for {label}. Check back soon — charts refresh every 6 hours.
+              </p>
+              <a href="/charts" className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-[var(--green)] no-underline hover:underline">
+                ← Back to Charts
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Chart */}
-        <div className="mp-card">
+        {entries.length > 0 && <div className="mp-card">
           {/* Desktop column headers */}
           <div className="hidden md:grid items-center px-[22px] h-9 border-b border-[var(--border)] bg-[var(--bg3)]"
             style={{ gridTemplateColumns: '52px 48px 1fr 100px 110px 80px' }}>
@@ -59,9 +80,13 @@ export function ChartPlatformPageClient({ platform, label, color, regionName, en
                     {entry.isNewEntry ? 'NEW' : entry.positionChange > 0 ? `↑${entry.positionChange}` : entry.positionChange < 0 ? `↓${Math.abs(entry.positionChange)}` : '—'}
                   </span>
                 </div>
-                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] mx-1"
-                  style={{ background: entry.song.artGradient ?? 'var(--bg3)' }}>
-                  {(entry.song as any).artEmoji ?? '🎵'}
+                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] mx-1 overflow-hidden"
+                  style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : (entry.song.artGradient ?? 'var(--bg3)') }}>
+                  {entry.song.albumCoverUrl ? (
+                    <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    (entry.song as any).artEmoji ?? '🎵'
+                  )}
                 </div>
                 <div className="pl-3.5 min-w-0">
                   <div className="text-[14px] font-bold tracking-[-0.02em] truncate">{entry.song.title}</div>
@@ -104,9 +129,13 @@ export function ChartPlatformPageClient({ platform, label, color, regionName, en
                     {entry.isNewEntry ? 'NEW' : entry.positionChange > 0 ? `↑${entry.positionChange}` : entry.positionChange < 0 ? `↓${Math.abs(entry.positionChange)}` : '—'}
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0"
-                  style={{ background: entry.song.artGradient ?? 'var(--bg3)' }}>
-                  {(entry.song as any).artEmoji ?? '🎵'}
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0 overflow-hidden"
+                  style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : (entry.song.artGradient ?? 'var(--bg3)') }}>
+                  {entry.song.albumCoverUrl ? (
+                    <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    (entry.song as any).artEmoji ?? '🎵'
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-bold tracking-[-0.02em] truncate">{entry.song.title}</div>
@@ -124,7 +153,7 @@ export function ChartPlatformPageClient({ platform, label, color, regionName, en
               </div>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )

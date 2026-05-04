@@ -79,6 +79,14 @@ export function CountriesPageClient({ countries, featured }: Props) {
                     entry.position === 1 ? 'rank-gold' : entry.position === 2 ? 'rank-silver' : entry.position === 3 ? 'rank-bronze' : 'text-[var(--text3)]')}>
                     {entry.position}
                   </span>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] border border-[rgba(255,255,255,0.05)] flex-shrink-0 overflow-hidden"
+                    style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : (entry.song.artGradient ?? 'var(--bg3)') }}>
+                    {entry.song.albumCoverUrl ? (
+                      <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      (entry.song as any).artEmoji ?? '🎵'
+                    )}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[12px] sm:text-[13px] font-semibold text-[var(--text)] truncate">{entry.song.title}</div>
                     <div className="text-[10px] sm:text-[11px] text-[var(--text3)] truncate">{entry.song.artistName}</div>

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { SearchModal } from './SearchModal'
 
 const NAV_LINKS = [
   { href: '/',             label: 'Home',         icon: HomeIcon },
@@ -16,6 +17,19 @@ const NAV_LINKS = [
 export function Nav() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Cmd+K / Ctrl+K global shortcut
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <nav className="sticky top-0 z-50 nav-glass border-b border-[var(--border)]">
@@ -55,7 +69,7 @@ export function Nav() {
         </ul>
 
         {/* Search */}
-        <button className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-[10px] px-3 sm:px-3.5 py-2 cursor-pointer transition-all hover:border-[var(--border2)]">
+        <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-[10px] px-3 sm:px-3.5 py-2 cursor-pointer transition-all hover:border-[var(--border2)]">
           <SearchIcon />
           <span className="text-[13px] text-[var(--text3)] font-medium hidden sm:block">Search…</span>
           <kbd className="hidden sm:block text-[10px] bg-[var(--bg)] border border-[var(--border)] px-[5px] py-[2px] rounded font-mono text-[var(--text3)]">
@@ -72,6 +86,9 @@ export function Nav() {
           {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
         </button>
       </div>
+
+      {/* Search Modal */}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Mobile menu overlay */}
       {mobileOpen && (
