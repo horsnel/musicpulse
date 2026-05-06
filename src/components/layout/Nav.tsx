@@ -11,7 +11,9 @@ const NAV_LINKS = [
   { href: '/charts',       label: 'Charts',       icon: ChartsIcon },
   { href: '/trending',     label: 'Trending',     icon: TrendingIcon },
   { href: '/artists',      label: 'Artists',      icon: ArtistIcon },
-  { href: '/new-releases', label: 'New Releases', icon: ReleasesIcon },
+  { href: '/albums',       label: 'Albums',       icon: AlbumsIcon },
+  { href: '/events',       label: 'Events',       icon: EventsIcon },
+  { href: '/blog',         label: 'Blog',         icon: BlogIcon },
 ]
 
 export function Nav() {
@@ -149,6 +151,15 @@ function ArtistIcon() {
 }
 function ReleasesIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3" fill="none"/><circle cx="7" cy="7" r="2" fill="currentColor"/><line x1="7" y1="1" x2="7" y2="3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+}
+function AlbumsIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none"/><circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.2" fill="none"/></svg>
+}
+function EventsIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="4.5" y1="1" x2="4.5" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="9.5" y1="1" x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="1.5" y1="6" x2="12.5" y2="6" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
+}
+function BlogIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/><line x1="4" y1="7.5" x2="8" y2="7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/><line x1="4" y1="10" x2="6" y2="10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
 }
 function SearchIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#545670" strokeWidth="1.4" fill="none"/><line x1="10.5" y1="10.5" x2="13.5" y2="13.5" stroke="#545670" strokeWidth="1.4" strokeLinecap="round"/></svg>
