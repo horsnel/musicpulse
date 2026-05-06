@@ -1,6 +1,0 @@
-# Cloudflare Pages _redirects for SPA-like dynamic routing
-# These serve a pre-rendered HTML page for all dynamic slugs.
-# The client-side JS reads the URL slug and fetches data from the API.
-
-/songs/:slug /songs/apt-rose-bruno-mars.html 200
-/artists/:slug /artists/burna-boy.html 200
