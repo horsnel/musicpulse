@@ -12,6 +12,7 @@ import type {
   ChartEntry, TrendingItem, CrossPlatformScore,
   VelocityItem, GenreHeatRow, Genre, Artist, Song, Album,
   Platform, ChartRegion, TrendingPlatform,
+  AggregatedChartEntry, SocialChartEntry, Article, ConcertEvent,
 } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://musicpulse-api.odehebuka48.workers.dev'
@@ -169,6 +170,42 @@ export async function getGenres(): Promise<Genre[]> {
 export async function getGenreChart(slug: string, limit = 50): Promise<ChartEntry[]> {
   return apiFetch<ChartEntry[]>(
     `/api/genres/${slug}?limit=${limit}`,
+    [],
+  )
+}
+
+// ─── AGGREGATED CHARTS ────────────────────────────────────────
+
+export async function getAggregatedCharts(limit = 200): Promise<AggregatedChartEntry[]> {
+  return apiFetch<AggregatedChartEntry[]>(
+    `/api/charts/aggregated?limit=${limit}`,
+    [],
+  )
+}
+
+// ─── SOCIAL CHARTS ────────────────────────────────────────────
+
+export async function getSocialCharts(limit = 200): Promise<SocialChartEntry[]> {
+  return apiFetch<SocialChartEntry[]>(
+    `/api/charts/social?limit=${limit}`,
+    [],
+  )
+}
+
+// ─── ARTICLES ─────────────────────────────────────────────────
+
+export async function getArticles(limit = 10): Promise<Article[]> {
+  return apiFetch<Article[]>(
+    `/api/articles?limit=${limit}`,
+    [],
+  )
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────
+
+export async function getEvents(limit = 20): Promise<ConcertEvent[]> {
+  return apiFetch<ConcertEvent[]>(
+    `/api/events?limit=${limit}`,
     [],
   )
 }

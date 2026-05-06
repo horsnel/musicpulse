@@ -1,34 +1,47 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { POSTS } from '../page'
+import { getArticles } from '@/lib/data'
+import { formatDate } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ slug: string }>
 }
 
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  news:           { bg: 'rgba(67,97,255,0.12)',   text: 'var(--blue)',   border: 'rgba(67,97,255,0.25)' },
+  review:         { bg: 'rgba(255,184,48,0.12)',   text: 'var(--gold)',   border: 'rgba(255,184,48,0.25)' },
+  feature:        { bg: 'rgba(176,108,255,0.12)',  text: 'var(--purple)', border: 'rgba(176,108,255,0.25)' },
+  'chart-analysis': { bg: 'rgba(29,185,84,0.12)',  text: 'var(--green)',  border: 'rgba(29,185,84,0.25)' },
+  interview:      { bg: 'rgba(255,45,107,0.12)',   text: 'var(--pink)',   border: 'rgba(255,45,107,0.25)' },
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const post = POSTS.find((p) => p.slug === slug)
-  if (!post) return { title: 'Post Not Found' }
+  const articles = await getArticles(50)
+  const article = articles.find((a) => a.slug === slug)
+  if (!article) return { title: 'Article Not Found' }
 
   return {
-    title: post.title,
-    description: post.excerpt,
+    title: article.title,
+    description: article.summary,
   }
 }
 
 export async function generateStaticParams() {
-  return POSTS.map((post) => ({ slug: post.slug }))
+  // Generate a template page for Cloudflare Pages Functions to use as a fallback
+  return [{ slug: 'template-article' }]
 }
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params
-  const post = POSTS.find((p) => p.slug === slug)
+  const articles = await getArticles(50)
+  const article = articles.find((a) => a.slug === slug)
 
-  if (!post) notFound()
+  if (!article) notFound()
 
-  const paragraphs = post.content.split('\n\n').filter(Boolean)
+  const catStyle = CATEGORY_STYLES[article.category] ?? CATEGORY_STYLES.news
+  const paragraphs = article.content.split('\n\n').filter(Boolean)
 
   return (
     <div className="relative z-10">
@@ -48,33 +61,44 @@ export default async function BlogPostPage({ params }: Props) {
             Back to Blog
           </Link>
 
-          {/* Tag */}
+          {/* Category badge */}
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.08em] uppercase mb-5"
-            style={{ background: `${post.tagColor}18`, color: post.tagColor, border: `1px solid ${post.tagColor}30` }}
+            style={{ background: catStyle.bg, color: catStyle.text, border: `1px solid ${catStyle.border}` }}
           >
-            {post.tag}
+            {article.category.replace('-', ' ')}
           </span>
 
           {/* Title */}
           <h1 className="text-[clamp(1.75rem,4vw,2.75rem)] font-black tracking-[-0.04em] leading-[1.1] mb-5">
-            {post.title}
+            {article.title}
           </h1>
 
           {/* Meta */}
           <div className="flex items-center gap-3 text-[13px] text-[var(--text3)] font-medium">
-            <span>{post.date}</span>
+            <span>{article.author}</span>
             <span className="text-[var(--border2)]">·</span>
-            <span>{post.readTime}</span>
+            <span>{formatDate(article.publishedAt)}</span>
+            <span className="text-[var(--border2)]">·</span>
+            <span>{article.source}</span>
           </div>
         </div>
       </div>
+
+      {/* Hero image */}
+      {article.imageUrl && (
+        <div className="max-w-[800px] mx-auto px-4 sm:px-7 mb-8">
+          <div className="w-full h-[300px] sm:h-[400px] rounded-xl overflow-hidden">
+            <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" loading="lazy" />
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="max-w-[800px] mx-auto px-4 sm:px-7 pb-16 sm:pb-24">
         <div className="h-px bg-[var(--border)] mb-8 sm:mb-10" />
 
-        <article className="prose-custom">
+        <article>
           {paragraphs.map((paragraph, i) => (
             <p
               key={i}
@@ -84,6 +108,33 @@ export default async function BlogPostPage({ params }: Props) {
             </p>
           ))}
         </article>
+
+        {/* Related artists and songs */}
+        {(article.relatedArtists.length > 0 || article.relatedSongs.length > 0) && (
+          <div className="mt-10 pt-8 border-t border-[var(--border)]">
+            <h3 className="text-[14px] font-bold text-[var(--text3)] tracking-[0.08em] uppercase mb-4">Related</h3>
+            <div className="flex flex-wrap gap-2">
+              {article.relatedArtists.map((artist) => (
+                <Link
+                  key={artist}
+                  href={`/artists/${artist.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-[var(--border2)] text-[var(--text3)] hover:border-[var(--text3)] hover:text-[var(--text2)] transition-all no-underline"
+                >
+                  {artist}
+                </Link>
+              ))}
+              {article.relatedSongs.map((song) => (
+                <Link
+                  key={song}
+                  href={`/songs/${song.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-[var(--border2)] text-[var(--text3)] hover:border-[var(--text3)] hover:text-[var(--text2)] transition-all no-underline"
+                >
+                  {song}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Bottom navigation */}
         <div className="mt-12 pt-8 border-t border-[var(--border)]">

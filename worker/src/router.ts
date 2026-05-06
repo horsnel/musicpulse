@@ -87,6 +87,18 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
       return { payload: results, updatedAt }
     }
 
+    // ── Aggregated Charts ────────────────────────────────────
+    case 'charts/aggregated': {
+      const limit = parseInt(url.searchParams.get('limit') ?? '200')
+      return readKV(env, 'charts:aggregated:global', limit)
+    }
+
+    // ── Social Charts ────────────────────────────────────────
+    case 'charts/social': {
+      const limit = parseInt(url.searchParams.get('limit') ?? '200')
+      return readKV(env, 'charts:social', limit)
+    }
+
     // ── Charts ───────────────────────────────────────────────
     case 'charts': {
       const platform = url.searchParams.get('platform') ?? 'spotify'
@@ -127,6 +139,18 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
     // ── Tours (Setlist.fm) ───────────────────────────────
     case 'artists/tours': {
       return readKV(env, 'artists:tours')
+    }
+
+    // ── Articles ─────────────────────────────────────────────
+    case 'articles': {
+      const limit = parseInt(url.searchParams.get('limit') ?? '10')
+      return readKV(env, 'articles:latest', limit)
+    }
+
+    // ── Events ───────────────────────────────────────────────
+    case 'events': {
+      const limit = parseInt(url.searchParams.get('limit') ?? '20')
+      return readKV(env, 'events:upcoming', limit)
     }
 
     // ── Countries ────────────────────────────────────────────

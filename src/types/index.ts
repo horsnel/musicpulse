@@ -156,6 +156,73 @@ export interface GenreHeatRow {
   days: number[]  // 7 values, 0–100 activity score
 }
 
+// ─── AGGREGATED CHART ──────────────────────────────────────────
+export interface AggregatedChartEntry {
+  songId: string
+  songTitle: string
+  artistName: string
+  albumCoverUrl?: string
+  artEmoji?: string
+  artGradient?: string
+  platforms: string[]
+  totalStreams: number
+  bestRank: number
+  platformCount: number
+  aggregatedScore: number
+}
+
+// ─── SOCIAL CHART ──────────────────────────────────────────────
+export interface SocialChartEntry {
+  songId: string
+  songTitle: string
+  artistName: string
+  albumCoverUrl?: string
+  artEmoji?: string
+  artGradient?: string
+  socialPlatforms: string[]
+  totalEngagement: number
+  bestRank: number
+  platformCount: number
+  socialScore: number
+  breakdown: { platform: string; rank: number; metric: number; metricUnit: string }[]
+}
+
+// ─── ARTICLE ───────────────────────────────────────────────────
+export interface Article {
+  id: string
+  title: string
+  summary: string
+  content: string
+  imageUrl: string
+  author: string
+  publishedAt: string
+  source: string
+  sourceUrl: string
+  category: 'news' | 'review' | 'interview' | 'feature' | 'chart-analysis'
+  relatedArtists: string[]
+  relatedSongs: string[]
+  slug: string
+}
+
+// ─── CONCERT EVENT ─────────────────────────────────────────────
+export interface ConcertEvent {
+  id: string
+  title: string
+  artist: string
+  artistSlug: string
+  venue: string
+  city: string
+  country: string
+  date: string
+  endDate?: string
+  type: 'concert' | 'festival' | 'tour' | 'virtual'
+  status: 'upcoming' | 'ongoing' | 'sold-out'
+  imageUrl: string
+  ticketUrl?: string
+  description: string
+  slug: string
+}
+
 // ─── META / SEO ────────────────────────────────────────────────
 export interface PageMeta {
   title: string

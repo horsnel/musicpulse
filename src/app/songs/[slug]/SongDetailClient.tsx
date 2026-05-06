@@ -16,6 +16,8 @@ export function SongDetailClient({ slug }: Props) {
   const [song, setSong] = useState<TrendingItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSong() {
@@ -37,6 +39,10 @@ export function SongDetailClient({ slug }: Props) {
         const json = await res.json()
         if (json.data) {
           setSong(json.data)
+          // Extract previewUrl from the API response (iTunes enrichment)
+          if (json.data.previewUrl) {
+            setPreviewUrl(json.data.previewUrl)
+          }
         } else {
           setError(true)
         }
@@ -225,6 +231,72 @@ export function SongDetailClient({ slug }: Props) {
                 </button>
               ))}
             </div>
+
+            {/* 30-sec Preview Player */}
+            {previewUrl && (
+              <div className="mt-6 p-4 rounded-[16px] border border-[var(--border)] bg-[var(--bg2)]">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const audio = document.getElementById('preview-audio') as HTMLAudioElement | null
+                      if (!audio) return
+                      if (isPlaying) {
+                        audio.pause()
+                        setIsPlaying(false)
+                      } else {
+                        audio.play()
+                        setIsPlaying(true)
+                      }
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer transition-all flex-shrink-0"
+                    style={{ background: 'var(--green)' }}
+                  >
+                    {isPlaying ? (
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="#000">
+                        <rect x="2" y="2" width="3.5" height="10" rx="1" />
+                        <rect x="8.5" y="2" width="3.5" height="10" rx="1" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <polygon points="3,1 13,7 3,13" fill="#000" />
+                      </svg>
+                    )}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-bold tracking-[0.06em] uppercase text-[var(--text3)] mb-1">
+                      30-sec Preview
+                    </div>
+                    <div className="text-[11px] text-[var(--text3)] font-medium">
+                      iTunes preview · Click play to listen
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    {[0.15, 0.3, 0.1, 0.25].map((delay, i) => (
+                      <span
+                        key={i}
+                        className="inline-block w-[2.5px] rounded-sm"
+                        style={{
+                          height: isPlaying ? `${6 + i * 3}px` : '6px',
+                          background: isPlaying ? 'var(--green)' : 'var(--text3)',
+                          animation: isPlaying ? `barBounce 0.8s ease-in-out infinite` : 'none',
+                          animationDelay: `${delay}s`,
+                          transition: 'background 0.2s',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <audio
+                  id="preview-audio"
+                  src={previewUrl}
+                  onEnded={() => setIsPlaying(false)}
+                  onPause={() => setIsPlaying(false)}
+                  onPlay={() => setIsPlaying(true)}
+                  preload="none"
+                  className="hidden"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

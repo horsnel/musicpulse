@@ -29,9 +29,13 @@ import { scrapeIHeartRadio } from './iheartradio'
 import { scrapeGenreCharts } from './genre-charts'
 import { scrapeMelon } from './melon'
 import { scrapeOricon } from './oricon'
+import { scrapeArticles } from './articles'
+import { scrapeEvents } from './events'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
 import { computeVelocity } from '../normalizers/velocity'
 import { computeHeatmap } from '../normalizers/heatmap'
+import { computeAggregatedCharts } from '../normalizers/aggregated-charts'
+import { computeSocialCharts } from '../normalizers/social-charts'
 import { writeKVMeta } from '../store'
 
 export async function scrapeAll(env: Env): Promise<void> {
@@ -92,6 +96,14 @@ export async function scrapeAll(env: Env): Promise<void> {
     computeCrossPlatform(env),
     computeVelocity(env),
     computeHeatmap(env),
+    computeAggregatedCharts(env),
+    computeSocialCharts(env),
+  ])
+
+  // Generate articles and events from trending data (depends on derived data)
+  await Promise.allSettled([
+    scrapeArticles(env),
+    scrapeEvents(env),
   ])
 
   // Update scrape metadata
@@ -146,6 +158,15 @@ export async function scrapeTrending(env: Env): Promise<void> {
     computeCrossPlatform(env),
     computeVelocity(env),
     computeHeatmap(env),
+    computeAggregatedCharts(env),
+    computeSocialCharts(env),
   ])
+
+  // Generate articles and events from trending data (depends on derived data)
+  await Promise.allSettled([
+    scrapeArticles(env),
+    scrapeEvents(env),
+  ])
+
   console.log('[scrape] Trending scrape completed')
 }
