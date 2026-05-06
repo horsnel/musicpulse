@@ -51,9 +51,13 @@ export function VelocityPageClient({ velocity }: Props) {
                     {v.rank}
                   </span>
                 </div>
-                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)]"
-                  style={{ background: v.artGradient ?? 'var(--bg3)' }}>
-                  {v.artEmoji}
+                <div className="w-11 h-11 rounded-[9px] flex items-center justify-center text-[22px] border border-[rgba(255,255,255,0.05)] overflow-hidden"
+                  style={{ background: v.albumCoverUrl ? 'var(--bg3)' : (v.artGradient ?? 'var(--bg3)') }}>
+                  {v.albumCoverUrl ? (
+                    <img src={v.albumCoverUrl} alt={v.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    v.artEmoji ?? '\uD83C\uDFB5'
+                  )}
                 </div>
                 <div className="pl-3 min-w-0">
                   <div className="text-[14px] font-bold tracking-[-0.02em] truncate">{v.songTitle}</div>
@@ -78,9 +82,13 @@ export function VelocityPageClient({ velocity }: Props) {
                     {v.rank}
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0"
-                  style={{ background: v.artGradient ?? 'var(--bg3)' }}>
-                  {v.artEmoji}
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[18px] border border-[rgba(255,255,255,0.05)] flex-shrink-0 overflow-hidden"
+                  style={{ background: v.albumCoverUrl ? 'var(--bg3)' : (v.artGradient ?? 'var(--bg3)') }}>
+                  {v.albumCoverUrl ? (
+                    <img src={v.albumCoverUrl} alt={v.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    v.artEmoji ?? '\uD83C\uDFB5'
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-bold tracking-[-0.02em] truncate">{v.songTitle}</div>

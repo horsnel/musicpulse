@@ -33,20 +33,31 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
           {/* #1 Song — Hero Card */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
-              <PlayingBars />
-              <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--green)]">
-                #1 on Spotify Global
-              </span>
+            <div className="flex items-start gap-5 mb-3 sm:mb-4">
+              {/* #1 Song artwork */}
+              {topSong.song.albumCoverUrl ? (
+                <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-xl flex-shrink-0 overflow-hidden border border-[rgba(255,255,255,0.05)]"
+                  style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)' }}>
+                  <img src={topSong.song.albumCoverUrl} alt={topSong.song.title} className="w-full h-full object-cover" />
+                </div>
+              ) : null}
+              <div>
+                <div className="flex items-center gap-2.5 mb-2 sm:mb-3">
+                  <PlayingBars />
+                  <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--green)]">
+                    #1 on Spotify Global
+                  </span>
+                </div>
+
+                <h1 className="text-[clamp(1.6rem,5vw,3.2rem)] font-black tracking-[-0.04em] leading-[1.1] text-[var(--text)] mb-2">
+                  {topSong.song.title}
+                </h1>
+
+                <p className="text-[16px] sm:text-[18px] font-semibold text-[var(--text2)] mb-4 sm:mb-5">
+                  {topSong.song.artistName}
+                </p>
+              </div>
             </div>
-
-            <h1 className="text-[clamp(1.6rem,5vw,3.2rem)] font-black tracking-[-0.04em] leading-[1.1] text-[var(--text)] mb-2">
-              {topSong.song.title}
-            </h1>
-
-            <p className="text-[16px] sm:text-[18px] font-semibold text-[var(--text2)] mb-4 sm:mb-5">
-              {topSong.song.artistName}
-            </p>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-5 sm:mb-6">
               {topSong.streams != null && (
@@ -106,6 +117,18 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                     >
                       {entry.position}
                     </span>
+
+                    {/* Album artwork */}
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[rgba(255,255,255,0.05)] overflow-hidden"
+                      style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : 'var(--bg3)' }}
+                    >
+                      {entry.song.albumCoverUrl ? (
+                        <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <span className="text-[16px]">🎵</span>
+                      )}
+                    </div>
 
                     {/* Song info */}
                     <div className="min-w-0 flex-1">

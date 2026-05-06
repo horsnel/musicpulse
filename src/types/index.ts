@@ -124,6 +124,7 @@ export interface CrossPlatformScore {
   artistName: string
   artEmoji?: string
   artGradient?: string
+  albumCoverUrl?: string     // real album cover from API
   platforms: TrendingPlatform[]
   score: number  // 0–100
 }
@@ -135,6 +136,7 @@ export interface VelocityItem {
   artistName: string
   artEmoji?: string
   artGradient?: string
+  albumCoverUrl?: string     // real album cover from API
   growthPercent: number | null  // null = new entry (∞)
   sparkline: number[]           // 7-point array normalised 0–1
   context: string               // e.g. "Grammy boost"

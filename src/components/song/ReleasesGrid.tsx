@@ -40,7 +40,7 @@ export function ReleasesGrid({ albums }: ReleasesGridProps) {
         return (
           <a
             key={album.id}
-            href={`/albums/${album.slug}`}
+            href={`/songs/${album.slug}`}
             className={cn(
               'mp-card group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
               'animate-fade-up',

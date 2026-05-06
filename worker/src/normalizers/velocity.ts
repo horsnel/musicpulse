@@ -21,6 +21,9 @@ interface TrendingEntry {
   platform: string
   badge: string | null
   surgePercent?: number
+  albumCoverUrl?: string
+  artEmoji?: string
+  artGradient?: string
 }
 
 const PLATFORMS = ['tiktok', 'youtube', 'spotify', 'apple', 'twitter', 'deezer', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart']
@@ -44,21 +47,23 @@ export async function computeVelocity(env: Env): Promise<void> {
     }
 
     // Deduplicate by song, keeping best platform performance
-    const songMap = new Map<string, TrendingEntry & { platforms: string[] }>()
+    const songMap = new Map<string, TrendingEntry & { platforms: string[]; albumCoverUrl: string }>()
 
     for (const item of allTrending) {
       const key = `${item.songTitle.toLowerCase().replace(/[^a-z0-9]/g, '')}`
       const existing = songMap.get(key)
 
       if (!existing) {
-        songMap.set(key, { ...item, platforms: [item.platform] })
+        songMap.set(key, { ...item, platforms: [item.platform], albumCoverUrl: item.albumCoverUrl || '' })
       } else {
         if (!existing.platforms.includes(item.platform)) {
           existing.platforms.push(item.platform)
         }
-        // Keep the one with better rank
+        // Keep the one with better rank, and preserve artwork
         if (item.rank < existing.rank) {
-          Object.assign(existing, item, { platforms: existing.platforms })
+          Object.assign(existing, item, { platforms: existing.platforms, albumCoverUrl: existing.albumCoverUrl || item.albumCoverUrl || '' })
+        } else if (!existing.albumCoverUrl && item.albumCoverUrl) {
+          existing.albumCoverUrl = item.albumCoverUrl
         }
       }
     }
@@ -85,6 +90,7 @@ export async function computeVelocity(env: Env): Promise<void> {
           artistName: song.artistName,
           artEmoji: getArtEmoji(),
           artGradient: '',
+          albumCoverUrl: song.albumCoverUrl || '',
           growthPercent,
           sparkline,
           context,

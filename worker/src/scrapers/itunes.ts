@@ -109,13 +109,17 @@ export async function scrapeITunes(env: Env): Promise<void> {
 
       // Also use iTunes to enrich trending data with album covers
       // Check for missing album covers in trending data
-      for (const platform of ['spotify', 'apple', 'youtube', 'tiktok', 'twitter']) {
+      const allTrendingPlatforms = ['spotify', 'apple', 'youtube', 'tiktok', 'twitter', 'deezer', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon', 'soundcloud', 'billboard']
+      for (const platform of allTrendingPlatforms) {
         const trendingData = await readKV<any>(env, `trending:${platform}`)
         if (!trendingData?.items) continue
 
         let enriched = false
+        const missingArtItems: any[] = []
+
         for (const item of trendingData.items) {
           if (!item.albumCoverUrl && item.songTitle && item.artistName) {
+            // First try matching from the tracks we already fetched
             const match = allTracks.find(t =>
               t.trackName.toLowerCase().includes(item.songTitle.toLowerCase().substring(0, 10)) &&
               t.artistName.toLowerCase().includes(item.artistName.toLowerCase().substring(0, 8))
@@ -123,6 +127,44 @@ export async function scrapeITunes(env: Env): Promise<void> {
             if (match?.artworkUrl100) {
               item.albumCoverUrl = match.artworkUrl100.replace('100x100', '600x600')
               enriched = true
+            } else {
+              missingArtItems.push(item)
+            }
+          }
+        }
+
+        // For remaining items, do targeted iTunes searches
+        if (missingArtItems.length > 0) {
+          const searchTerms = missingArtItems.slice(0, 5).map(item =>
+            `${item.songTitle} ${item.artistName}`
+          )
+
+          for (const term of searchTerms) {
+            try {
+              const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1&country=us`
+              const res = await fetch(url, {
+                headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
+              })
+              if (!res.ok) continue
+              const data = await res.json() as iTunesSearchResponse
+              if (data.results?.[0]?.artworkUrl100) {
+                const artworkUrl = data.results[0].artworkUrl100.replace('100x100', '600x600')
+                // Find the matching item and set its cover
+                const searchResult = data.results[0]
+                for (const item of missingArtItems) {
+                  if (
+                    !item.albumCoverUrl &&
+                    (item.songTitle.toLowerCase().includes(searchResult.trackName.toLowerCase().substring(0, 8)) ||
+                     searchResult.trackName.toLowerCase().includes(item.songTitle.toLowerCase().substring(0, 8)))
+                  ) {
+                    item.albumCoverUrl = artworkUrl
+                    enriched = true
+                  }
+                }
+              }
+              await new Promise(r => setTimeout(r, 200))
+            } catch {
+              // Ignore search errors
             }
           }
         }

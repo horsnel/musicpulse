@@ -420,7 +420,13 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
             {velocity.map(v => (
               <div key={v.rank} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)]">
                 <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text3)] w-[16px] sm:w-[18px] text-center flex-shrink-0">{v.rank}</span>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-[15px] sm:text-[18px] flex-shrink-0 border border-[var(--border)]" style={{ background: v.artGradient ?? 'var(--bg3)' }}>{v.artEmoji}</div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-[15px] sm:text-[18px] flex-shrink-0 border border-[var(--border)] overflow-hidden" style={{ background: v.albumCoverUrl ? 'var(--bg3)' : (v.artGradient ?? 'var(--bg3)') }}>
+                  {v.albumCoverUrl ? (
+                    <img src={v.albumCoverUrl} alt={v.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    v.artEmoji ?? '\uD83C\uDFB5'
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{v.songTitle}</div>
                   <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5 truncate">{v.artistName} · {v.context}</div>
@@ -453,7 +459,13 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           <div className="p-1.5 sm:p-2">
             {crossPlatform.map(cp => (
               <div key={cp.songId} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)]">
-                <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[16px] sm:text-[20px] flex-shrink-0 border border-[var(--border)]" style={{ background: cp.artGradient ?? 'var(--bg3)' }}>{cp.artEmoji}</div>
+                <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[16px] sm:text-[20px] flex-shrink-0 border border-[var(--border)] overflow-hidden" style={{ background: cp.albumCoverUrl ? 'var(--bg3)' : (cp.artGradient ?? 'var(--bg3)') }}>
+                  {cp.albumCoverUrl ? (
+                    <img src={cp.albumCoverUrl} alt={cp.songTitle} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    cp.artEmoji ?? '\uD83C\uDFB5'
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] sm:text-[13.5px] font-bold tracking-[-0.02em] truncate">{cp.songTitle}</div>
                   <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5">{cp.artistName}</div>

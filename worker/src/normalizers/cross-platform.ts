@@ -22,6 +22,9 @@ interface TrendingEntry {
   platform: string
   badge: string | null
   surgePercent?: number
+  albumCoverUrl?: string
+  artEmoji?: string
+  artGradient?: string
 }
 
 const PLATFORMS = ['tiktok', 'youtube', 'spotify', 'apple', 'twitter', 'deezer', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart']
@@ -53,6 +56,7 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
       bestRank: number
       totalMetric: number
       maxSurge: number
+      albumCoverUrl: string
     }>()
 
     for (const item of allTrending) {
@@ -64,6 +68,7 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
         bestRank: item.rank,
         totalMetric: 0,
         maxSurge: 0,
+        albumCoverUrl: '',
       }
 
       if (!existing.platforms.includes(item.platform)) {
@@ -72,6 +77,10 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
       existing.bestRank = Math.min(existing.bestRank, item.rank)
       existing.totalMetric += item.metric || 0
       existing.maxSurge = Math.max(existing.maxSurge, item.surgePercent || 0)
+      // Keep the best album cover URL (prefer non-empty)
+      if (!existing.albumCoverUrl && item.albumCoverUrl) {
+        existing.albumCoverUrl = item.albumCoverUrl
+      }
 
       songMap.set(key, existing)
     }
@@ -83,6 +92,7 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
       artistName: string
       artEmoji: string
       artGradient: string
+      albumCoverUrl: string
       platforms: string[]
       score: number
     }
@@ -98,6 +108,7 @@ export async function computeCrossPlatform(env: Env): Promise<void> {
           artistName: song.artistName,
           artEmoji: getArtEmoji(),
           artGradient: '',
+          albumCoverUrl: song.albumCoverUrl || '',
           platforms: song.platforms,
           score: Math.min(100, Math.round(platformWeight + rankWeight + surgeWeight)),
         }

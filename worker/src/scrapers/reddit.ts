@@ -162,6 +162,7 @@ export async function scrapeReddit(env: Env): Promise<void> {
         artistName: parsed.artist || `r/${post.sub}`,
         artEmoji: getArtEmoji(),
         artGradient: getArtGradient(i),
+        albumCoverUrl: '', // Will be enriched by iTunes enrichment pass
         metric: engagement,
         metricUnit: 'engagements',
         badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : i < 5 ? 'new' : null) as any,
