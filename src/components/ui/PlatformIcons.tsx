@@ -18,7 +18,7 @@ import {
   SiIheartradio,
 } from 'react-icons/si'
 
-type IconPlatform = TrendingPlatform | Platform | 'billboard' | 'shazam' | 'soundcloud' | 'deezer' | 'instagram' | 'rss' | 'bandcamp' | 'audiomack' | 'genius' | 'musixmatch' | 'iheart'
+type IconPlatform = TrendingPlatform | Platform | 'billboard' | 'shazam' | 'soundcloud' | 'deezer' | 'instagram' | 'rss' | 'bandcamp' | 'audiomack' | 'genius' | 'musixmatch' | 'iheart' | 'melon' | 'oricon'
 
 interface PlatformIconProps {
   platform: IconPlatform
@@ -44,6 +44,8 @@ const PLATFORM_ICON_COLORS: Record<string, string> = {
   genius: '#FFFF64',
   musixmatch: '#FF6E40',
   iheart: '#C6002B',
+  melon: '#00CD3C',
+  oricon: '#CC0000',
 }
 
 // Real brand icons from react-icons/si
@@ -95,18 +97,30 @@ export function PlatformIcon({ platform, size = 20, className }: PlatformIconPro
       )
     case 'iheart':
       return <SiIheartradio size={size} color={color} className={className} />
+    case 'melon':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5" fill="none" />
+          <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill={color}>M</text>
+        </svg>
+      )
+    case 'oricon':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5" fill="none" />
+          <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill={color}>O</text>
+        </svg>
+      )
     case 'instagram':
       return <SiInstagram size={size} color={color} className={className} />
     case 'rss':
       return <SiRss size={size} color={color} className={className} />
-    default: {
-      const _exhaustive: never = platform
+    default:
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
           <circle cx="12" cy="12" r="10" fill="#666" />
         </svg>
       )
-    }
   }
 }
 
@@ -132,6 +146,8 @@ export const PLATFORM_COLORS: Record<string, { color: string; rgb: string; dim: 
   genius:     { color: '#FFFF64', rgb: '255,255,100', dim: 'rgba(255,255,100,0.1)' },
   musixmatch: { color: '#FF6E40', rgb: '255,110,64',  dim: 'rgba(255,110,64,0.1)' },
   iheart:     { color: '#C6002B', rgb: '198,0,43',    dim: 'rgba(198,0,43,0.1)' },
+  melon:      { color: '#00CD3C', rgb: '0,205,60',     dim: 'rgba(0,205,60,0.1)' },
+  oricon:     { color: '#CC0000', rgb: '204,0,0',      dim: 'rgba(204,0,0,0.1)' },
 }
 
 export const PLATFORM_LABELS: Record<string, string> = {
@@ -151,4 +167,6 @@ export const PLATFORM_LABELS: Record<string, string> = {
   genius: 'Genius',
   musixmatch: 'Musixmatch',
   iheart: 'iHeartRadio',
+  melon: 'Melon',
+  oricon: 'Oricon',
 }

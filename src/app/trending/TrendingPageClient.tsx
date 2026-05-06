@@ -41,6 +41,8 @@ interface Props {
   genius: TrendingItem[]
   musixmatch: TrendingItem[]
   iheart: TrendingItem[]
+  melon: TrendingItem[]
+  oricon: TrendingItem[]
   crossPlatform: CrossPlatformScore[]
   velocity: VelocityItem[]
   heatmap: GenreHeatRow[]
@@ -60,6 +62,8 @@ const PLAT_META: Record<string, { label: string; sub: string; color: string; upd
   genius:     { label: 'Genius',       sub: 'Lyrics & Annotations', color: '#FFFF64', updated: '2h ago' },
   musixmatch: { label: 'Musixmatch',   sub: 'Lyrics Trends',      color: '#FF6E40',  updated: '3h ago' },
   iheart:     { label: 'iHeartRadio',  sub: 'Radio Charts',       color: '#C6002B',  updated: '2h ago' },
+  melon:      { label: 'Melon',        sub: 'Korea Top 100',      color: '#00CD3C',  updated: '1h ago' },
+  oricon:     { label: 'Oricon',       sub: 'Japan Hot 100',      color: '#CC0000',  updated: '3h ago' },
 }
 
 // Helper to get platform color for rgba backgrounds
@@ -78,6 +82,8 @@ function platRgb(platform: string) {
     case 'genius':     return '255,255,100'
     case 'musixmatch': return '255,110,64'
     case 'iheart':     return '198,0,43'
+    case 'melon':      return '0,205,60'
+    case 'oricon':     return '204,0,0'
     default:        return '255,255,255'
   }
 }
@@ -107,8 +113,8 @@ async function fetchFromApi<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
-export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, deezer: initDeezer, soundcloud: initSoundcloud, billboard: initBillboard, bandcamp: initBandcamp, audiomack: initAudiomack, genius: initGenius, musixmatch: initMusixmatch, iheart: initIheart, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
-  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'deezer' | 'soundcloud' | 'billboard' | 'bandcamp' | 'audiomack' | 'genius' | 'musixmatch' | 'iheart'>('all')
+export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, youtube: initYoutube, spotify: initSpotify, apple: initApple, deezer: initDeezer, soundcloud: initSoundcloud, billboard: initBillboard, bandcamp: initBandcamp, audiomack: initAudiomack, genius: initGenius, musixmatch: initMusixmatch, iheart: initIheart, melon: initMelon, oricon: initOricon, crossPlatform: initCP, velocity: initVel, heatmap: initHeat }: Props) {
+  const [activePlatform, setActivePlatform] = useState<'all' | 'tiktok' | 'twitter' | 'youtube' | 'spotify' | 'apple' | 'deezer' | 'soundcloud' | 'billboard' | 'bandcamp' | 'audiomack' | 'genius' | 'musixmatch' | 'iheart' | 'melon' | 'oricon'>('all')
   const [timeRange, setTimeRange] = useState('Now')
   const [liveData, setLiveData] = useState(false)
 
@@ -126,6 +132,8 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const [genius, setGenius] = useState(initGenius)
   const [musixmatch, setMusixmatch] = useState(initMusixmatch)
   const [iheart, setIheart] = useState(initIheart)
+  const [melon, setMelon] = useState(initMelon)
+  const [oricon, setOricon] = useState(initOricon)
   const [crossPlatform, setCrossPlatform] = useState(initCP)
   const [velocity, setVelocity] = useState(initVel)
   const [heatmap, setHeatmap] = useState(initHeat)
@@ -139,6 +147,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           tTiktok, tTwitter, tYoutube, tSpotify, tApple,
           tDeezer, tSoundcloud, tBillboard,
           tBandcamp, tAudiomack, tGenius, tMusixmatch, tIheart,
+          tMelon, tOricon,
           tCP, tVel, tHeat,
         ] = await Promise.all([
           fetchFromApi<TrendingItem[]>('/api/trending?platform=tiktok&limit=8', initTiktok),
@@ -154,6 +163,8 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           fetchFromApi<TrendingItem[]>('/api/trending?platform=genius&limit=8', initGenius),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=musixmatch&limit=8', initMusixmatch),
           fetchFromApi<TrendingItem[]>('/api/trending?platform=iheart&limit=8', initIheart),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=melon&limit=8', initMelon),
+          fetchFromApi<TrendingItem[]>('/api/trending?platform=oricon&limit=8', initOricon),
           fetchFromApi<CrossPlatformScore[]>('/api/trending/cross-platform?limit=5', initCP),
           fetchFromApi<VelocityItem[]>('/api/trending/velocity?limit=5', initVel),
           fetchFromApi<GenreHeatRow[]>('/api/trending/heatmap', initHeat),
@@ -172,6 +183,8 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
         setGenius(tGenius)
         setMusixmatch(tMusixmatch)
         setIheart(tIheart)
+        setMelon(tMelon)
+        setOricon(tOricon)
         setCrossPlatform(tCP)
         setVelocity(tVel)
         setHeatmap(tHeat)
@@ -189,7 +202,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
-  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music, Deezer (3 cols) — Row 3: SoundCloud, Billboard, Bandcamp (3 cols) — Row 4: Audiomack, Genius, Musixmatch (3 cols) — Row 5: iHeartRadio (1 col)
+  // Row 1: TikTok, X, YouTube (3 cols) — Row 2: Spotify, Apple Music, Deezer (3 cols) — Row 3: SoundCloud, Billboard, Bandcamp (3 cols) — Row 4: Audiomack, Genius, Musixmatch (3 cols) — Row 5: iHeartRadio (1 col) — Row 6: Melon, Oricon (2 cols)
   const row1 = [
     { platform: 'tiktok' as const, items: tiktok },
     { platform: 'twitter' as const, items: twitter },
@@ -213,8 +226,12 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
   const row5 = [
     { platform: 'iheart' as const, items: iheart },
   ]
+  const row6 = [
+    { platform: 'melon' as const, items: melon },
+    { platform: 'oricon' as const, items: oricon },
+  ]
 
-  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2), ...deezer.slice(0,2), ...soundcloud.slice(0,1), ...billboard.slice(0,1), ...bandcamp.slice(0,1), ...audiomack.slice(0,1), ...genius.slice(0,1), ...musixmatch.slice(0,1), ...iheart.slice(0,1)]
+  const allItems = [...tiktok.slice(0,3), ...twitter.slice(0,2), ...youtube.slice(0,2), ...spotify.slice(0,2), ...apple.slice(0,2), ...deezer.slice(0,2), ...soundcloud.slice(0,1), ...billboard.slice(0,1), ...bandcamp.slice(0,1), ...audiomack.slice(0,1), ...genius.slice(0,1), ...musixmatch.slice(0,1), ...iheart.slice(0,1), ...melon.slice(0,1), ...oricon.slice(0,1)]
 
   // Format the last updated time
   const updatedLabel = lastUpdated
@@ -243,7 +260,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                       background: `rgba(${platRgb(item.platform)},0.15)`,
                       color: platTextColor(item.platform),
                     }}>
-                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : item.platform === 'deezer' ? 'DZ' : item.platform === 'soundcloud' ? 'SC' : item.platform === 'billboard' ? 'BB' : item.platform === 'bandcamp' ? 'BC' : item.platform === 'audiomack' ? 'AK' : item.platform === 'genius' ? 'GN' : item.platform === 'musixmatch' ? 'MX' : item.platform === 'iheart' ? 'IH' : 'YT'}
+                    {item.platform === 'tiktok' ? 'TT' : item.platform === 'twitter' ? 'X' : item.platform === 'spotify' ? 'SP' : item.platform === 'apple' ? 'AM' : item.platform === 'deezer' ? 'DZ' : item.platform === 'soundcloud' ? 'SC' : item.platform === 'billboard' ? 'BB' : item.platform === 'bandcamp' ? 'BC' : item.platform === 'audiomack' ? 'AK' : item.platform === 'genius' ? 'GN' : item.platform === 'musixmatch' ? 'MX' : item.platform === 'iheart' ? 'IH' : item.platform === 'melon' ? 'ML' : item.platform === 'oricon' ? 'OR' : 'YT'}
                   </span>
                   <span className="font-black text-[#ff2d6b]">#{item.rank}</span>
                   {item.songTitle} — {item.artistName}
@@ -308,6 +325,8 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   { id: 'genius', label: 'Genius', color: '#FFFF64' },
                   { id: 'musixmatch', label: 'Musixmatch', color: '#FF6E40' },
                   { id: 'iheart', label: 'iHeart', color: '#C6002B' },
+                  { id: 'melon', label: 'Melon', color: '#00CD3C' },
+                  { id: 'oricon', label: 'Oricon', color: '#CC0000' },
                 ].map(p => (
                   p.id === 'all' ? (
                     <button key={p.id} onClick={() => setActivePlatform(p.id as any)}
@@ -368,6 +387,15 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
       {iheart.length > 0 && (
         <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
           {row5.map(({ platform, items }) => (
+            <TrendingColumn key={platform} platform={platform} items={items} />
+          ))}
+        </div>
+      )}
+
+      {/* Row 6: Melon, Oricon — 2 columns */}
+      {(melon.length > 0 || oricon.length > 0) && (
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+          {row6.map(({ platform, items }) => (
             <TrendingColumn key={platform} platform={platform} items={items} />
           ))}
         </div>
@@ -510,6 +538,8 @@ const PLAT_ROUTE: Record<string, string> = {
   genius: '/trending/genius',
   musixmatch: '/trending/musixmatch',
   iheart: '/trending/iheart',
+  melon: '/trending/melon',
+  oricon: '/trending/oricon',
 }
 
 // ── Reusable Trending Column ──────────────────────────────────
@@ -571,7 +601,7 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
               {item.albumCoverUrl ? (
                 <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" loading="lazy" />
               ) : (
-                item.artEmoji
+                item.artEmoji || '🎵'
               )}
             </div>
 

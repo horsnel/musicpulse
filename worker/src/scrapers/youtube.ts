@@ -78,6 +78,9 @@ async function scrapeYouTubeAPI(env: Env): Promise<void> {
       songId: item.id,
       songTitle: cleanYouTubeTitle(item.snippet.title),
       artistName: item.snippet.channelTitle,
+      artEmoji: getArtEmoji(),
+      artGradient: getArtGradient(i),
+      albumCoverUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url,
       metric: parseInt(item.statistics?.viewCount || '0'),
       metricUnit: 'views',
       badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
@@ -112,8 +115,10 @@ async function generateFromAppleMusic(env: Env): Promise<void> {
     songId: item.songId,
     songTitle: item.songTitle,
     artistName: item.artistName,
-    artEmoji: item.artEmoji || getArtEmoji(),
-    artGradient: item.artGradient || getArtGradient(i),
+    // Always include artEmoji and artGradient as fallback even when albumCoverUrl is present.
+    // The frontend shows the image when available, but falls back to emoji+gradient when not.
+    artEmoji: getArtEmoji(item.genres?.[0]),
+    artGradient: getArtGradient(i),
     albumCoverUrl: item.albumCoverUrl,
     metric: Math.max(1000000, 200000000 - i * 20000000),
     metricUnit: 'views',

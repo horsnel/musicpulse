@@ -27,6 +27,8 @@ import { scrapeAudiomack } from './audiomack'
 import { scrapeMusixmatch } from './musixmatch'
 import { scrapeIHeartRadio } from './iheartradio'
 import { scrapeGenreCharts } from './genre-charts'
+import { scrapeMelon } from './melon'
+import { scrapeOricon } from './oricon'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
 import { computeVelocity } from '../normalizers/velocity'
 import { computeHeatmap } from '../normalizers/heatmap'
@@ -60,6 +62,10 @@ export async function scrapeAll(env: Env): Promise<void> {
     // Genre charts
     scrapeGenreCharts(env),
 
+    // Regional charts (no key needed)
+    scrapeMelon(env),
+    scrapeOricon(env),
+
     // Artist/metadata enrichment (key-gated)
     scrapeLastfm(env),
     scrapeTheAudioDB(env),
@@ -74,6 +80,7 @@ export async function scrapeAll(env: Env): Promise<void> {
     'bandcamp', 'audiomack', 'iheartradio', 'musixmatch',
     'itunes', 'musicbrainz',
     'genre-charts',
+    'melon', 'oricon',
     'lastfm', 'theaudiodb', 'genius', 'setlistfm',
   ]
   results.forEach((r, i) => {
@@ -109,6 +116,8 @@ export async function scrapeCharts(env: Env): Promise<void> {
     scrapeDeezer(env),
     scrapeYouTube(env),
     scrapeGenreCharts(env),
+    scrapeMelon(env),
+    scrapeOricon(env),
   ])
   console.log('[scrape] Chart scrape completed')
 }
@@ -128,6 +137,8 @@ export async function scrapeTrending(env: Env): Promise<void> {
     scrapeAudiomack(env),
     scrapeIHeartRadio(env),
     scrapeMusixmatch(env),
+    scrapeMelon(env),
+    scrapeOricon(env),
   ])
 
   // Recompute derived data

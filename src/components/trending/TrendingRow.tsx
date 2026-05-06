@@ -25,6 +25,8 @@ const PLATFORM_META: Record<TrendingPlatform, { label: string; color: string; di
   genius:     { label: 'Genius',      color: '#FFFF64',  dim: 'rgba(255,255,100,0.1)' },
   musixmatch: { label: 'Musixmatch',  color: '#FF6E40',  dim: 'rgba(255,110,64,0.1)' },
   iheart:     { label: 'iHeartRadio', color: '#C6002B',  dim: 'rgba(198,0,43,0.1)' },
+  melon:      { label: 'Melon',        color: '#00CD3C',  dim: 'rgba(0,205,60,0.1)' },
+  oricon:     { label: 'Oricon',       color: '#CC0000',  dim: 'rgba(204,0,0,0.1)' },
 }
 
 const BADGE_VARIANT_MAP: Record<string, 'green' | 'pink' | 'gold' | 'purple' | 'blue'> = {

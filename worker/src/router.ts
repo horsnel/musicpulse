@@ -6,6 +6,7 @@
  */
 
 import { Env } from './index'
+import { slugify } from './scrapers/helpers'
 
 const CACHE_TTL = 300 // 5 min browser cache
 
@@ -48,6 +49,22 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
     }
   }
 
+  // ── Song detail route (dynamic slug) ──────────────────────
+  if (path.startsWith('songs/')) {
+    const slug = path.replace('songs/', '')
+    if (slug) {
+      return lookupSong(env, slug)
+    }
+  }
+
+  // ── Artist detail route (dynamic slug) ────────────────────
+  if (path.startsWith('artists/')) {
+    const slug = path.replace('artists/', '')
+    if (slug && slug !== 'tours') {
+      return lookupArtist(env, slug)
+    }
+  }
+
   switch (path) {
     // ── Trending ─────────────────────────────────────────────
     case 'trending': {
@@ -57,7 +74,7 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
         return readKV(env, `trending:${platform}`, limit)
       }
       // Return all trending platforms
-      const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart']
+      const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
       const results: Record<string, any[]> = {}
       let updatedAt = ''
       for (const p of platforms) {
@@ -134,6 +151,79 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
 
     default:
       return null
+  }
+}
+
+// ── Song / Artist Lookup ─────────────────────────────────────────
+
+/**
+ * Search across all trending data in KV for a matching song.
+ * Looks through each platform's trending data and returns the first match
+ * where the songId or slugified songTitle matches the given slug.
+ */
+async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updatedAt: string } | null> {
+  const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
+
+  for (const platform of platforms) {
+    const data = await readKV(env, `trending:${platform}`)
+    if (!data) continue
+
+    const match = (data.payload as any[]).find((item: any) => {
+      const itemSlug = slugify(item.songTitle + '-' + item.artistName)
+      return itemSlug === slug || item.songId === slug
+    })
+
+    if (match) {
+      return {
+        payload: { ...match, platform },
+        updatedAt: data.updatedAt,
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Search across all trending data for matching artistName (slugified).
+ * Compiles all songs by that artist across platforms.
+ */
+async function lookupArtist(env: Env, slug: string): Promise<{ payload: any; updatedAt: string } | null> {
+  const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
+
+  const songs: any[] = []
+  let artistName = ''
+  let updatedAt = ''
+  const seenSongIds = new Set<string>()
+
+  for (const platform of platforms) {
+    const data = await readKV(env, `trending:${platform}`)
+    if (!data) continue
+
+    for (const item of data.payload as any[]) {
+      if (slugify(item.artistName) === slug) {
+        if (!artistName) artistName = item.artistName
+        if (!updatedAt) updatedAt = data.updatedAt
+        // Deduplicate by songId
+        const dedupeKey = item.songId || slugify(item.songTitle + '-' + item.artistName)
+        if (!seenSongIds.has(dedupeKey)) {
+          seenSongIds.add(dedupeKey)
+          songs.push({ ...item, platform })
+        }
+      }
+    }
+  }
+
+  if (songs.length === 0) return null
+
+  return {
+    payload: {
+      slug,
+      name: artistName || slug,
+      songs,
+      totalSongs: songs.length,
+    },
+    updatedAt,
   }
 }
 

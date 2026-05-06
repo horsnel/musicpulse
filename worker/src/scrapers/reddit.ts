@@ -34,6 +34,7 @@ interface RedditPost {
     link_flair_text: string | null
     thumbnail: string
     created_utc: number
+    stickied: boolean
   }
 }
 
@@ -77,21 +78,20 @@ export async function scrapeReddit(env: Env): Promise<void> {
         const posts = data.data?.children ?? []
 
         for (const post of posts) {
-          // Filter for music-related posts (discussions, new releases, etc.)
+          // Filter out only mod/stickied posts — accept all other posts
+          // The strict [FRESH]/[DISCUSSION] filter was too rigid and returned 0 items
+          // since most subreddits don't use these flairs consistently
+          if (post.data.stickied) continue
+
           const title = post.data.title
-          if (title.startsWith('[FRESH') || title.startsWith('[DISCUSSION') ||
-              post.data.link_flair_text === 'DISCUSSION' ||
-              post.data.link_flair_text === 'FRESH' ||
-              post.data.score > 100) {
-            allPosts.push({
-              title: cleanRedditTitle(title),
-              score: post.data.score,
-              comments: post.data.num_comments,
-              sub,
-              url: `https://reddit.com${post.data.permalink}`,
-              flair: post.data.link_flair_text,
-            })
-          }
+          allPosts.push({
+            title: cleanRedditTitle(title),
+            score: post.data.score,
+            comments: post.data.num_comments,
+            sub,
+            url: `https://reddit.com${post.data.permalink}`,
+            flair: post.data.link_flair_text,
+          })
         }
 
         // Rate limit
