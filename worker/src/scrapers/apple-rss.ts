@@ -42,7 +42,7 @@ export async function scrapeAppleRSS(env: Env): Promise<void> {
 
   for (const feed of FEEDS) {
     try {
-      const url = `https://itunes.apple.com/${feed.country}/rss/topsongs/limit=100/json`
+      const url = `https://itunes.apple.com/${feed.country}/rss/topsongs/limit=200/json`
       const res = await fetch(url, {
         headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
       })

@@ -57,7 +57,7 @@ export async function scrapeDeezer(env: Env): Promise<void> {
 
   for (const playlist of PLAYLISTS) {
     try {
-      const url = `https://api.deezer.com/playlist/${playlist.playlistId}/tracks?limit=100`
+      const url = `https://api.deezer.com/playlist/${playlist.playlistId}/tracks?limit=200`
       const res = await fetch(url, {
         headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
       })
@@ -92,7 +92,7 @@ export async function scrapeDeezer(env: Env): Promise<void> {
           genres: [],
           popularityScore: Math.min(100, Math.round((track.rank || 0) / 10000)),
         },
-        platform: 'spotify' as const,
+        platform: 'deezer' as const,
         region: playlist.id as any,
         position: i + 1,
         positionChange: 0,
@@ -112,7 +112,8 @@ export async function scrapeDeezer(env: Env): Promise<void> {
       // Write as Spotify chart fallback (when no Spotify API keys)
       const existingSpotify = await env.DATA.get(`charts:spotify:${playlist.id}`)
       if (!existingSpotify) {
-        await writeKV(env, `charts:spotify:${playlist.id}`, chartEntries)
+        const spotifyEntries = chartEntries.map(e => ({ ...e, platform: 'spotify' as const }))
+        await writeKV(env, `charts:spotify:${playlist.id}`, spotifyEntries)
       }
 
       // Also write to Apple charts as fallback when no Apple RSS data

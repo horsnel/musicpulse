@@ -29,6 +29,8 @@ import { scrapeIHeartRadio } from './iheartradio'
 import { scrapeGenreCharts } from './genre-charts'
 import { scrapeMelon } from './melon'
 import { scrapeOricon } from './oricon'
+import { scrapeSoundcloud } from './soundcloud'
+import { scrapeBillboard } from './billboard'
 import { scrapeArticles } from './articles'
 import { scrapeEvents } from './events'
 import { computeCrossPlatform } from '../normalizers/cross-platform'
@@ -58,6 +60,8 @@ export async function scrapeAll(env: Env): Promise<void> {
     scrapeAudiomack(env),
     scrapeIHeartRadio(env),
     scrapeMusixmatch(env),
+    scrapeSoundcloud(env),
+    scrapeBillboard(env),
 
     // Enrichment (no key needed)
     scrapeITunes(env),
@@ -81,7 +85,7 @@ export async function scrapeAll(env: Env): Promise<void> {
   const names = [
     'spotify-charts', 'apple-rss', 'deezer', 'youtube',
     'tiktok', 'reddit',
-    'bandcamp', 'audiomack', 'iheartradio', 'musixmatch',
+    'bandcamp', 'audiomack', 'iheartradio', 'musixmatch', 'soundcloud', 'billboard',
     'itunes', 'musicbrainz',
     'genre-charts',
     'melon', 'oricon',
@@ -149,6 +153,8 @@ export async function scrapeTrending(env: Env): Promise<void> {
     scrapeAudiomack(env),
     scrapeIHeartRadio(env),
     scrapeMusixmatch(env),
+    scrapeSoundcloud(env),
+    scrapeBillboard(env),
     scrapeMelon(env),
     scrapeOricon(env),
   ])
