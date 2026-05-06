@@ -47,14 +47,18 @@ export function ReleasesGrid({ albums }: ReleasesGridProps) {
               `delay-${(i % 5) + 1}`,
             )}
           >
-            {/* Album art placeholder */}
+            {/* Album art */}
             <div
-              className="aspect-square flex items-center justify-center text-[40px] relative"
-              style={{ background: gradient }}
+              className="aspect-square flex items-center justify-center text-[40px] relative overflow-hidden"
+              style={{ background: album.coverUrl ? 'var(--bg3)' : gradient }}
             >
-              <span className="group-hover:scale-110 transition-transform duration-300">
-                {emoji}
-              </span>
+              {album.coverUrl ? (
+                <img src={album.coverUrl} alt={album.title} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <span className="group-hover:scale-110 transition-transform duration-300">
+                  {emoji}
+                </span>
+              )}
 
               {/* Type badge overlay */}
               <span

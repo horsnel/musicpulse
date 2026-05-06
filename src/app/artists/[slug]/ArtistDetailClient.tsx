@@ -24,6 +24,7 @@ interface ArtistSong {
 interface ArtistData {
   slug: string
   name: string
+  imageUrl?: string
   songs: ArtistSong[]
   totalSongs: number
 }
@@ -150,9 +151,13 @@ export function ArtistDetailClient({ slug }: Props) {
             {/* Spinning ring */}
             <div className="absolute inset-[-6px] rounded-full ring-rotate"
               style={{ background: `conic-gradient(from 0deg, ${accentColor}, ${accentColor}80, #1DB954, ${accentColor})` }} />
-            <div className="relative z-10 w-[320px] h-[320px] rounded-full flex items-center justify-center text-[120px] border-4 border-[var(--bg)]"
-              style={{ background: 'linear-gradient(135deg,#1a1a08,#2a1a00,#3a2000)', boxShadow: `0 32px 80px rgba(0,0,0,0.7),0 0 60px ${accentDim}` }}>
-              🎤
+            <div className="relative z-10 w-[320px] h-[320px] rounded-full flex items-center justify-center text-[120px] border-4 border-[var(--bg)] overflow-hidden"
+              style={{ background: artist.imageUrl ? 'var(--bg3)' : 'linear-gradient(135deg,#1a1a08,#2a1a00,#3a2000)', boxShadow: `0 32px 80px rgba(0,0,0,0.7),0 0 60px ${accentDim}` }}>
+              {artist.imageUrl ? (
+                <img src={artist.imageUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                '🎤'
+              )}
             </div>
           </div>
 

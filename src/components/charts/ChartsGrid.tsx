@@ -67,6 +67,18 @@ function ChartCard({
               {entry.position}
             </span>
 
+            {/* Album artwork */}
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[rgba(255,255,255,0.05)] overflow-hidden"
+              style={{ background: entry.song.albumCoverUrl ? 'var(--bg3)' : 'var(--bg3)' }}
+            >
+              {entry.song.albumCoverUrl ? (
+                <img src={entry.song.albumCoverUrl} alt={entry.song.title} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <span className="text-[16px]">🎵</span>
+              )}
+            </div>
+
             {/* Song info */}
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold text-[var(--text)] truncate">

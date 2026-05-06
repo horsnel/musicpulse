@@ -84,14 +84,18 @@ function TrendingCard({
               {item.rank}
             </span>
 
-            {/* Art emoji placeholder */}
+            {/* Album artwork */}
             <div
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-[14px] sm:text-[16px]"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-[14px] sm:text-[16px] border border-[rgba(255,255,255,0.05)] overflow-hidden"
               style={{
-                background: item.artGradient ?? 'var(--bg3)',
+                background: item.albumCoverUrl ? 'var(--bg3)' : (item.artGradient ?? 'var(--bg3)'),
               }}
             >
-              {item.artEmoji ?? '🎶'}
+              {item.albumCoverUrl ? (
+                <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                item.artEmoji ?? '🎶'
+              )}
             </div>
 
             {/* Song info + badge (inline, no overlap) */}

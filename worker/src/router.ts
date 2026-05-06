@@ -157,26 +157,89 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
 // ── Song / Artist Lookup ─────────────────────────────────────────
 
 /**
- * Search across all trending data in KV for a matching song.
- * Looks through each platform's trending data and returns the first match
- * where the songId or slugified songTitle matches the given slug.
+ * Search across all trending AND chart data in KV for a matching song.
+ * Uses fuzzy matching: exact slug, partial slug, or song title keywords.
  */
 async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updatedAt: string } | null> {
-  const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
+  const platforms = ['apple', 'spotify', 'deezer', 'youtube', 'tiktok', 'twitter', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
 
+  // Normalize the incoming slug for matching
+  const slugNorm = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  // 1. Try exact match on trending data
   for (const platform of platforms) {
     const data = await readKV(env, `trending:${platform}`)
     if (!data) continue
 
     const match = (data.payload as any[]).find((item: any) => {
       const itemSlug = slugify(item.songTitle + '-' + item.artistName)
-      return itemSlug === slug || item.songId === slug
+      const itemSlugNorm = itemSlug.replace(/[^a-z0-9]/g, '')
+      return itemSlugNorm === slugNorm || itemSlug === slug
     })
 
     if (match) {
-      return {
-        payload: { ...match, platform },
-        updatedAt: data.updatedAt,
+      return { payload: { ...match, platform }, updatedAt: data.updatedAt }
+    }
+  }
+
+  // 2. Try chart data (has richer song objects)
+  for (const platform of ['apple', 'spotify', 'deezer', 'youtube']) {
+    for (const region of ['global', 'us', 'nigeria', 'uk', 'korea', 'brazil', 'germany', 'south-africa']) {
+      const data = await readKV(env, `charts:${platform}:${region}`)
+      if (!data) continue
+
+      const match = (data.payload as any[]).find((item: any) => {
+        const songSlug = item.song?.slug || slugify(item.song?.title + '-' + item.song?.artistName)
+        const songSlugNorm = songSlug.replace(/[^a-z0-9]/g, '')
+        return songSlugNorm === slugNorm || songSlug === slug
+      })
+
+      if (match) {
+        // Convert ChartEntry to a TrendingItem-like object for the frontend
+        return {
+          payload: {
+            id: match.id,
+            rank: match.position,
+            rankChange: match.positionChange || 0,
+            isNew: match.isNewEntry || false,
+            platform: match.platform || platform,
+            songId: match.songId,
+            songTitle: match.song?.title || '',
+            artistName: match.song?.artistName || '',
+            albumCoverUrl: match.song?.albumCoverUrl || '',
+            artEmoji: match.song?.artEmoji || '\u{1F3B5}',
+            artGradient: match.song?.artGradient || '',
+            metric: match.streams || 0,
+            metricUnit: 'streams',
+            badge: match.isNewEntry ? 'new' : match.position === 1 ? 'peak' : null,
+            surgePercent: null,
+            updatedAt: data.updatedAt,
+            // Extra chart info
+            chartRegion: region,
+            peakPosition: match.peakPosition || match.position,
+            weeksOnChart: match.weeksOnChart || 1,
+          },
+          updatedAt: data.updatedAt,
+        }
+      }
+    }
+  }
+
+  // 3. Fuzzy match: split slug into keywords and find partial match
+  const keywords = slug.split('-').filter(k => k.length > 2)
+  if (keywords.length > 0) {
+    for (const platform of platforms) {
+      const data = await readKV(env, `trending:${platform}`)
+      if (!data) continue
+
+      const match = (data.payload as any[]).find((item: any) => {
+        const titleNorm = (item.songTitle || '').toLowerCase()
+        const artistNorm = (item.artistName || '').toLowerCase()
+        return keywords.every(kw => titleNorm.includes(kw) || artistNorm.includes(kw))
+      })
+
+      if (match) {
+        return { payload: { ...match, platform }, updatedAt: data.updatedAt }
       }
     }
   }
@@ -185,25 +248,34 @@ async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updat
 }
 
 /**
- * Search across all trending data for matching artistName (slugified).
- * Compiles all songs by that artist across platforms.
+ * Search across all trending and chart data for matching artistName.
+ * Uses fuzzy matching for slug comparison.
  */
 async function lookupArtist(env: Env, slug: string): Promise<{ payload: any; updatedAt: string } | null> {
-  const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
+  const platforms = ['apple', 'spotify', 'deezer', 'youtube', 'tiktok', 'twitter', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
 
+  const slugNorm = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
   const songs: any[] = []
   let artistName = ''
   let updatedAt = ''
   const seenSongIds = new Set<string>()
+  let bestCoverUrl = ''
 
   for (const platform of platforms) {
     const data = await readKV(env, `trending:${platform}`)
     if (!data) continue
 
     for (const item of data.payload as any[]) {
-      if (slugify(item.artistName) === slug) {
+      const artistSlug = slugify(item.artistName)
+      const artistSlugNorm = artistSlug.replace(/[^a-z0-9]/g, '')
+      const match = artistSlugNorm === slugNorm || artistSlug === slug
+      // Also try partial match on artist name keywords
+      const partialMatch = !match && slug.split('-').every(kw => item.artistName.toLowerCase().includes(kw))
+
+      if (match || partialMatch) {
         if (!artistName) artistName = item.artistName
         if (!updatedAt) updatedAt = data.updatedAt
+        if (!bestCoverUrl && item.albumCoverUrl) bestCoverUrl = item.albumCoverUrl
         // Deduplicate by songId
         const dedupeKey = item.songId || slugify(item.songTitle + '-' + item.artistName)
         if (!seenSongIds.has(dedupeKey)) {
@@ -214,12 +286,49 @@ async function lookupArtist(env: Env, slug: string): Promise<{ payload: any; upd
     }
   }
 
+  // Also search chart data for this artist
+  for (const platform of ['apple', 'spotify', 'deezer', 'youtube']) {
+    for (const region of ['global', 'us']) {
+      const data = await readKV(env, `charts:${platform}:${region}`)
+      if (!data) continue
+
+      for (const item of data.payload as any[]) {
+        if (!item.song) continue
+        const artistSlug = slugify(item.song.artistName || '')
+        const artistSlugNorm = artistSlug.replace(/[^a-z0-9]/g, '')
+        if (artistSlugNorm === slugNorm || artistSlug === slug) {
+          if (!artistName) artistName = item.song.artistName
+          if (!updatedAt) updatedAt = data.updatedAt
+          if (!bestCoverUrl && item.song.albumCoverUrl) bestCoverUrl = item.song.albumCoverUrl
+          const dedupeKey = item.songId || slugify(item.song.title + '-' + item.song.artistName)
+          if (!seenSongIds.has(dedupeKey)) {
+            seenSongIds.add(dedupeKey)
+            songs.push({
+              id: item.id,
+              songTitle: item.song.title,
+              artistName: item.song.artistName,
+              albumCoverUrl: item.song.albumCoverUrl || '',
+              artEmoji: item.song.artEmoji || '\u{1F3B5}',
+              artGradient: item.song.artGradient || '',
+              platform: item.platform || platform,
+              rank: item.position,
+              metric: item.streams || 0,
+              metricUnit: 'streams',
+              badge: item.isNewEntry ? 'new' : item.position === 1 ? 'peak' : null,
+            })
+          }
+        }
+      }
+    }
+  }
+
   if (songs.length === 0) return null
 
   return {
     payload: {
       slug,
-      name: artistName || slug,
+      name: artistName || slug.replace(/-/g, ' '),
+      imageUrl: bestCoverUrl || '',
       songs,
       totalSongs: songs.length,
     },

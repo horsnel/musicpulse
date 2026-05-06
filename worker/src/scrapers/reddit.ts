@@ -1,16 +1,20 @@
 /**
- * Reddit JSON Scraper (serves as "X/Twitter" trending proxy)
+ * Reddit RSS Scraper (serves as "X/Twitter" trending proxy)
  *
- * Fetches music trending topics from Reddit's public JSON API.
- * No API key required — just append .json to any Reddit URL.
+ * Fetches music trending topics from Reddit's public RSS/Atom feeds.
+ * No API key required — just append .rss to any Reddit URL.
+ *
+ * IMPORTANT: Reddit's JSON API (.json) returns 403 from Cloudflare Workers.
+ * The RSS/Atom feeds (.rss) are still publicly accessible, so we parse those
+ * instead. RSS doesn't include score/comments, so we derive engagement from
+ * rank position and use the hot-sort order as the relevance signal.
  *
  * Used as a proxy for X/Twitter trending since Nitter instances
  * are mostly dead. Reddit's r/music, r/popheads, and r/hiphopheads
  * provide real-time music discussion data.
- *
- * Also generates the "twitter" trending items from Reddit data.
  */
 
+import { XMLParser } from 'fast-xml-parser'
 import { Env } from '../index'
 import { writeKV } from '../store'
 import { slugify, getArtGradient, getArtEmoji } from './helpers'
@@ -21,51 +25,54 @@ const SUBREDDITS = [
   { sub: 'music', label: 'General Music' },
 ]
 
-interface RedditPost {
-  data: {
-    id: string
-    title: string
-    score: number
-    num_comments: number
-    upvote_ratio: number
-    author: string
-    permalink: string
-    url: string
-    link_flair_text: string | null
-    thumbnail: string
-    created_utc: number
-    stickied: boolean
-  }
-}
+/** Bot / moderator accounts whose posts should be excluded */
+const BOT_AUTHORS = new Set([
+  '/u/AutoModerator',
+  '/u/MusicReposts',
+  'AutoModerator',
+])
 
-interface RedditResponse {
-  data: {
-    children: RedditPost[]
-    after: string | null
-  }
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,        // we need @_href from <link>
+  attributeNamePrefix: '@_',
+  textNodeName: '#text',
+  isArray: (name) => name === 'entry',  // always treat <entry> as array
+})
+
+interface AtomEntry {
+  title: string
+  link: { '@_href': string; '@_rel'?: string; '@_type'?: string }
+  author: { name: string; uri?: string }
+  id: string
+  published: string
+  updated: string
+  category: { '@_term': string; '@_label': string } | Array<{ '@_term': string; '@_label': string }>
+  content?: string
 }
 
 export async function scrapeReddit(env: Env): Promise<void> {
-  console.log('[reddit] Starting...')
+  console.log('[reddit] Starting RSS scrape...')
 
   try {
-    // Fetch hot posts from music subreddits
     const allPosts: Array<{
       title: string
-      score: number
-      comments: number
       sub: string
       url: string
-      flair: string | null
+      author: string
+      publishedAt: string
+      rank: number
     }> = []
 
-    for (const { sub } of SUBREDDITS) {
+    let globalRank = 0
+
+    for (const { sub, label } of SUBREDDITS) {
       try {
-        const url = `https://www.reddit.com/r/${sub}/hot.json?limit=15&raw_json=1`
+        // Use RSS/Atom feed — .json is blocked (403) from Workers
+        const url = `https://www.reddit.com/r/${sub}/hot.rss?limit=20`
         const res = await fetch(url, {
           headers: {
-            'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)',
-            'Accept': 'application/json',
+            'User-Agent': 'MusicPulse/1.0 (by /u/musicpulse_bot)',
+            'Accept': 'application/atom+xml,application/rss+xml,application/xml,text/xml',
           },
         })
 
@@ -74,40 +81,76 @@ export async function scrapeReddit(env: Env): Promise<void> {
           continue
         }
 
-        const data = await res.json() as RedditResponse
-        const posts = data.data?.children ?? []
+        const xml = await res.text()
 
-        for (const post of posts) {
-          // Filter out only mod/stickied posts — accept all other posts
-          // The strict [FRESH]/[DISCUSSION] filter was too rigid and returned 0 items
-          // since most subreddits don't use these flairs consistently
-          if (post.data.stickied) continue
+        // Quick sanity check: if it looks like an HTML page instead of XML, skip
+        if (xml.trimStart().startsWith('<!doctype') || xml.trimStart().startsWith('<html')) {
+          console.warn(`[reddit] r/${sub} returned HTML instead of Atom feed (likely blocked)`)
+          continue
+        }
 
-          const title = post.data.title
+        const parsed = xmlParser.parse(xml)
+        const entries: AtomEntry[] = parsed?.feed?.entry ?? []
+
+        if (!Array.isArray(entries) || entries.length === 0) {
+          console.warn(`[reddit] r/${sub} returned 0 entries`)
+          continue
+        }
+
+        for (const entry of entries) {
+          globalRank++
+
+          const title = entry.title?.trim()
+          if (!title) continue
+
+          // Filter out bot/stickied posts (AutoModerator, weekly threads, etc.)
+          const author = entry.author?.name?.trim() || ''
+          if (BOT_AUTHORS.has(author)) continue
+
+          // Filter out common sticky/mod thread patterns
+          const lowerTitle = title.toLowerCase()
+          if (
+            lowerTitle.startsWith('daily discussion') ||
+            lowerTitle.startsWith('weekly ') ||
+            lowerTitle.startsWith('general discussion') ||
+            lowerTitle.startsWith('moratorium') ||
+            lowerTitle.includes('teatime &amp; trending') ||
+            lowerTitle.includes('teatime & trending')
+          ) {
+            continue
+          }
+
+          const linkHref = entry.link?.['@_href'] || ''
+
           allPosts.push({
             title: cleanRedditTitle(title),
-            score: post.data.score,
-            comments: post.data.num_comments,
             sub,
-            url: `https://reddit.com${post.data.permalink}`,
-            flair: post.data.link_flair_text,
+            url: linkHref || `https://reddit.com/r/${sub}`,
+            author: author.replace(/^\/u\//, ''),
+            publishedAt: entry.published || entry.updated || new Date().toISOString(),
+            rank: globalRank,
           })
         }
 
-        // Rate limit
-        await new Promise(r => setTimeout(r, 300))
+        // Rate limit between subreddits
+        await new Promise(r => setTimeout(r, 400))
       } catch (err) {
         console.error(`[reddit] r/${sub} error:`, err)
       }
     }
 
-    // Sort by engagement (score + comments)
-    allPosts.sort((a, b) => (b.score + b.comments * 2) - (a.score + a.comments * 2))
+    console.log(`[reddit] Collected ${allPosts.length} posts from ${SUBREDDITS.length} subreddits`)
+
+    // Sort by rank (lower rank = higher on hot page = more engagement)
+    allPosts.sort((a, b) => a.rank - b.rank)
 
     // Generate "twitter" trending items from Reddit discussions
-    // This replaces X/Twitter trending since Nitter is dead
-    const twitterTrending = allPosts.slice(0, 8).map((post, i) => {
+    // Since RSS doesn't include score/comments, we derive engagement from rank
+    const twitterTrending = allPosts.slice(0, 10).map((post, i) => {
       const parsed = parseMusicTitle(post.title)
+      // Derive a synthetic engagement metric from rank (higher rank → more engagement)
+      const engagement = Math.max(10, 500 - (post.rank - 1) * 30)
+
       return {
         id: `twitter-trend-${i}`,
         rank: i + 1,
@@ -115,15 +158,17 @@ export async function scrapeReddit(env: Env): Promise<void> {
         isNew: i === 0,
         platform: 'twitter' as const,
         songId: slugify(parsed.title + '-' + parsed.artist),
-        songTitle: parsed.title || post.title.substring(0, 50),
+        songTitle: parsed.title || post.title.substring(0, 60),
         artistName: parsed.artist || `r/${post.sub}`,
         artEmoji: getArtEmoji(),
         artGradient: getArtGradient(i),
-        metric: post.score + post.comments * 2,
+        metric: engagement,
         metricUnit: 'engagements',
         badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : i < 5 ? 'new' : null) as any,
         surgePercent: Math.max(10, 100 - i * 10),
         updatedAt: new Date().toISOString(),
+        sourceUrl: post.url,
+        sourceAuthor: post.author,
       }
     })
 
@@ -139,8 +184,8 @@ export async function scrapeReddit(env: Env): Promise<void> {
 
 function cleanRedditTitle(title: string): string {
   return title
-    .replace(/^\[(FRESH|DISCUSSION|NEW)\]\s*/i, '')
-    .replace(/^\[.*?\]\s*/, '')
+    .replace(/^\[(FRESH|DISCUSSION|NEW|REVIEW|VIDEO|ARTICLE|NEWS)\]\s*/i, '')
+    .replace(/^\[.*?\]\s*/, '')       // remove any remaining [FLAIR] prefixes
     .trim()
 }
 
