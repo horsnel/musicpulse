@@ -39,6 +39,15 @@ export async function handleApi(req: Request, env: Env): Promise<Response> {
 }
 
 async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload: any; updatedAt: string } | null> {
+  // ── Genre detail route (dynamic slug) ─────────────────────
+  if (path.startsWith('genres/')) {
+    const slug = path.replace('genres/', '')
+    if (slug) {
+      const limit = parseInt(url.searchParams.get('limit') ?? '50')
+      return readKV(env, `charts:genre:${slug}`, limit)
+    }
+  }
+
   switch (path) {
     // ── Trending ─────────────────────────────────────────────
     case 'trending': {
@@ -116,6 +125,11 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
     // ── Genius Enrichment ────────────────────────────────────
     case 'enrichment/genius': {
       return readKV(env, 'enrichment:genius')
+    }
+
+    // ── Genres ──────────────────────────────────────────────
+    case 'genres': {
+      return readKV(env, 'genres:index')
     }
 
     default:
