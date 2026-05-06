@@ -140,6 +140,14 @@ export interface VelocityItem {
   context: string               // e.g. "Grammy boost"
 }
 
+// ─── GENRE ──────────────────────────────────────────────────────
+export interface Genre {
+  slug: string
+  name: string
+  color: string
+  songCount: number
+}
+
 // ─── GENRE HEATMAP ─────────────────────────────────────────────
 export interface GenreHeatRow {
   genre: string

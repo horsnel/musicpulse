@@ -1,27 +1,49 @@
 import type { Metadata } from 'next'
+import { getGenres } from '@/lib/data'
 import { GenrePills } from '@/components/ui/GenrePills'
+import type { Genre } from '@/types'
 
 export const metadata: Metadata = {
   title: 'Browse Genres',
   description: 'Explore music by genre — from Afrobeats and K-Pop to Hip-Hop and Electronic. Find your sound.',
 }
 
-const GENRE_CARDS = [
-  { label: 'Pop', emoji: '🎤', gradient: 'linear-gradient(135deg,#642b73,#c6426e)', description: 'Mainstream hits and radio favorites. From chart-toppers to indie pop gems.' },
-  { label: 'Hip-Hop', emoji: '🎧', gradient: 'linear-gradient(135deg,#4b1248,#f10711)', description: 'Bars, beats, and culture. Trap, conscious rap, and everything in between.' },
-  { label: 'Afrobeats', emoji: '🌍', gradient: 'linear-gradient(135deg,#1a1000,#3a2800)', description: 'The sound of Africa going global. Burna Boy, Davido, Wizkid, and rising stars.' },
-  { label: 'K-Pop', emoji: '🌸', gradient: 'linear-gradient(135deg,#6a1a6e,#b06cff)', description: 'Korean pop domination. Groups, soloists, and the fandoms driving the wave.' },
-  { label: 'Latin', emoji: '💃', gradient: 'linear-gradient(135deg,#b85500,#ff8c00)', description: 'Reggaeton, Latin pop, and regional Mexican music taking over the world.' },
-  { label: 'R&B', emoji: '🎵', gradient: 'linear-gradient(135deg,#1a4a6e,#2196f3)', description: 'Smooth vocals, deep grooves. Contemporary and classic rhythm and blues.' },
-  { label: 'Amapiano', emoji: '🎹', gradient: 'linear-gradient(135deg,#0f2027,#2c5364)', description: 'South Africa\'s house subgenre with deep basslines and soulful melodies.' },
-  { label: 'Dancehall', emoji: '🏝️', gradient: 'linear-gradient(135deg,#134e5e,#71b280)', description: 'Caribbean rhythms and bass-heavy beats. Roots reggae meets modern production.' },
-  { label: 'Reggaeton', emoji: '🔥', gradient: 'linear-gradient(135deg,#c94b4b,#4b134f)', description: 'The dembow beat that conquered the globe. Bad Bunny, Daddy Yankee, and more.' },
-  { label: 'Drill', emoji: '🥊', gradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', description: 'Hard-hitting 808s and sliding beats. UK, Brooklyn, and beyond.' },
-  { label: 'Indie', emoji: '🎸', gradient: 'linear-gradient(135deg,#2d1b69,#11998e)', description: 'Alternative sounds and DIY spirit. Lo-fi, dream pop, and post-punk revival.' },
-  { label: 'Electronic', emoji: '⚡', gradient: 'linear-gradient(135deg,#0a0a2e,#1e3a8a)', description: 'From techno to EDM. Festival anthems, underground cuts, and everything synth.' },
-]
+/** Map genre slugs to emojis for visual flair */
+const GENRE_EMOJIS: Record<string, string> = {
+  pop: '🎤',
+  'hip-hop-rap': '🎧',
+  'r-b-soul': '🎵',
+  country: '🤠',
+  electronic: '⚡',
+  dance: '💃',
+  latin: '🔥',
+  rock: '🎸',
+  alternative: '🌿',
+  'k-pop': '🌸',
+  afrobeats: '🌍',
+  'singer-songwriter': '🎹',
+  blues: '🎷',
+  christian: '✝️',
+  reggae: '🏝️',
+  metal: '🤘',
+  'hard-rock': '🔥',
+  'fitness-workout': '💪',
+  folk: '🪕',
+  worldwide: '🌍',
+  jazz: '🎺',
+  classical: '🎻',
+  gospel: '🙏',
+  world: '🌍',
+  indian: '🇮🇳',
+}
 
-export default function GenresPage() {
+function getGenreEmoji(slug: string): string {
+  return GENRE_EMOJIS[slug] ?? '🎵'
+}
+
+export default async function GenresPage() {
+  const genres = await getGenres()
+
   return (
     <div className="relative z-10">
       {/* Header */}
@@ -50,31 +72,50 @@ export default function GenresPage() {
           <GenrePills />
         </div>
 
-        {/* Genre cards grid */}
+        {/* Genre cards grid — data-driven from API */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {GENRE_CARDS.map((genre) => (
+          {genres.map((genre: Genre) => (
             <a
-              key={genre.label}
-              href={`/charts`}
+              key={genre.slug}
+              href={`/genres/${genre.slug}`}
               className="mp-card group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl no-underline"
             >
-              {/* Gradient header */}
+              {/* Gradient header with genre color */}
               <div
-                className="h-[100px] flex items-center justify-center text-[44px] relative"
-                style={{ background: genre.gradient }}
+                className="h-[100px] flex items-center justify-center text-[44px] relative overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${genre.color}cc, ${genre.color}44)` }}
               >
                 <span className="group-hover:scale-110 transition-transform duration-300">
-                  {genre.emoji}
+                  {getGenreEmoji(genre.slug)}
                 </span>
+                {/* Decorative circle */}
+                <div
+                  className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20"
+                  style={{ background: genre.color }}
+                />
               </div>
               {/* Info */}
               <div className="p-5">
-                <h3 className="text-[16px] font-bold tracking-[-0.02em] text-[var(--text)] group-hover:text-[var(--green)] transition-colors">
-                  {genre.label}
-                </h3>
-                <p className="text-[13px] text-[var(--text3)] mt-2 leading-relaxed font-medium">
-                  {genre.description}
-                </p>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-[16px] font-bold tracking-[-0.02em] text-[var(--text)] group-hover:text-[var(--green)] transition-colors">
+                    {genre.name}
+                  </h3>
+                  <span
+                    className="text-[11px] font-bold tracking-[0.04em] px-2.5 py-0.5 rounded-full"
+                    style={{ background: `${genre.color}20`, color: genre.color }}
+                  >
+                    {genre.songCount} songs
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: genre.color }}
+                  />
+                  <span className="text-[13px] text-[var(--text3)] font-medium">
+                    Top charts curated for {genre.name}
+                  </span>
+                </div>
               </div>
             </a>
           ))}

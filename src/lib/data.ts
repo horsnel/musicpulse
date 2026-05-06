@@ -10,7 +10,7 @@
 
 import type {
   ChartEntry, TrendingItem, CrossPlatformScore,
-  VelocityItem, GenreHeatRow, Artist, Song, Album,
+  VelocityItem, GenreHeatRow, Genre, Artist, Song, Album,
   Platform, ChartRegion, TrendingPlatform,
 } from '@/types'
 
@@ -153,6 +153,22 @@ export async function getSong(slug: string): Promise<Song | null> {
 export async function getNewReleases(limit = 5): Promise<Album[]> {
   return apiFetch<Album[]>(
     `/api/albums/new?limit=${limit}`,
+    [],
+  )
+}
+
+// ─── GENRES ───────────────────────────────────────────────────
+
+export async function getGenres(): Promise<Genre[]> {
+  return apiFetch<Genre[]>(
+    '/api/genres',
+    [],
+  )
+}
+
+export async function getGenreChart(slug: string, limit = 50): Promise<ChartEntry[]> {
+  return apiFetch<ChartEntry[]>(
+    `/api/genres/${slug}?limit=${limit}`,
     [],
   )
 }
