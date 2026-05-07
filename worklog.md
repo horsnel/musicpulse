@@ -1,92 +1,123 @@
+# MusicPulse Worklog
+
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Expand MusicPulse scrapers to work without API keys
+Task: Verify codebase state and X/Twitter scraper with fresh data
 
 Work Log:
-- Analyzed all 12 existing scrapers to understand data flow and key dependencies
-- Identified 4 key-gated scrapers (Spotify, Last.fm, TheAudioDB, Musixmatch) and 1 unimplemented (Musixmatch)
-- Created 4 new keyless scrapers: discogs.ts, wikipedia.ts, soundcloud.ts, billboard-rss.ts
-- Rewrote spotify-charts.ts: Deezer as primary source, Spotify API as optional enrichment
-- Rewrote lastfm.ts: Chart genre analysis + MusicBrainz + Discogs as primary, Last.fm API as optional
-- Rewrote theaudiodb.ts: Deezer + Wikipedia enrichment as primary, TheAudioDB as optional
-- Updated orchestrator (scrapers/index.ts) with new scrapers and clear documentation
-- Updated Env interface to mark all API keys as optional
-- Updated router.ts with new API endpoints (genres, artist releases, status, soundcloud, billboard)
-- Updated heatmap normalizer to use Discogs + chart genre analysis
-- Updated cross-platform and velocity normalizers to include soundcloud + billboard
-- Updated frontend types, components, and mock data for new platforms
-- Updated wrangler.toml with keyless architecture documentation
-- Validated: Worker TypeScript compiles with 0 errors, Frontend Next.js builds successfully
+- Cloned repository from GitHub (horsnel/musicpulse)
+- Verified X/Twitter trending data now shows proper songs with artwork (Choosin' Texas by Ella Langley, In The Stars by Rolling Stones, etc.)
+- Verified SoundCloud trending has artwork from Apple Music fallback
+- Verified Billboard trending has artwork from Apple Music fallback
+- All data endpoints returning 200 with proper JSON
 
 Stage Summary:
-- MusicPulse now works fully WITHOUT any API keys
-- 9 free data sources cover all chart/trending/artist/genre data
-- API keys (Spotify, Last.fm, TheAudioDB, YouTube, Genius, Setlist.fm) are now optional enrichment
-- New platforms added: SoundCloud trending, Billboard Hot 100
-- New artist data sources: Discogs (bios, images, discography), Wikipedia (bios, images)
-- All changes are backward compatible - existing API key flow still works
+- X/Twitter scraper rewrite is WORKING - data shows clean song titles and artwork
+- SoundCloud and Billboard scrapers are working with Apple Music fallback
+- All trending, chart, article, and event endpoints are functional
 
 ---
 Task ID: 2
 Agent: Main Agent
-Task: Deploy MusicPulse keyless worker to Cloudflare
+Task: Update marketing pages — remove emojis, add quality SVG icons
 
 Work Log:
-- Verified Cloudflare API token with wrangler whoami
-- Confirmed MUSICPULSE_DATA KV namespace exists in target account (ID: 9be5ae1c24164b3b9eaa076af454ee17)
-- Confirmed worker musicpulse-api exists with previous deployments and 5 secrets configured
-- Deployed updated keyless worker: wrangler deploy succeeded (Version ID: eb6bc046-cb96-4a9b-a2de-e1b60174ded9)
-- Set new SCRAPE_SECRET for manual scrape triggering
-- Triggered full scrape to populate KV with data from new keyless sources
-- Verified all endpoints working:
-  - Health check: mode=-keyless, enrichment keys detected (YouTube, Genius, Setlist.fm)
-  - Charts: Deezer data flowing (Olivia Rodrigo, Ella Langley, BTS, Taylor Swift, Bruno Mars)
-  - SoundCloud trending: New keyless data populated
-  - Billboard trending: New keyless data populated
-  - Cross-platform: Multi-platform scoring working
-  - Velocity: Growth sparklines computed
-  - Heatmap: Genre trends (Pop, Hip-Hop, Afrobeats, K-Pop)
-- Committed 18 files (1941 insertions, 186 deletions) and pushed to GitHub (horsnel/musicpulse)
+- Removed emojis from advertise/page.tsx (📊📧🏠🎯 → chart/mail/home/target SVG icons)
+- Removed emojis from newsletter/page.tsx (📊🚀💿 → chart/rocket/disc SVG icons)
+- Added AdIcon component with proper colored SVG icons to advertise page
+- Added NLICon component with proper colored SVG icons to newsletter page
+- Added icon containers with color-mix background styling
 
 Stage Summary:
-- Worker deployed at: https://musicpulse-api.odehebuka48.workers.dev
-- Cron triggers: Charts every 6 hours, Trending every 2 hours
-- All keyless scrapers are live and populating data
-- Existing enrichment secrets (Genius, Setlist.fm, YouTube) continue to work
-- GitHub repo updated with keyless architecture code
+- All marketing pages now use professional SVG icons instead of emojis
+- Advertise page: 4 custom SVG icons (chart bars, mail envelope, house, target)
+- Newsletter page: 3 custom SVG icons (chart bars, rocket, disc/vinyl)
 
 ---
 Task ID: 3
 Agent: Main Agent
-Task: Remove all mock data and replace with live data
+Task: Build Concert/Events 'near you' feature with geolocation
 
 Work Log:
-- Audited entire codebase: found 27 mock/hardcoded/fallback data locations across 13 files
-- Removed all MOCK_* constants from src/lib/data.ts (~150 lines of mock data deleted)
-- apiFetch() now returns empty arrays/null on failure instead of mock data
-- Removed Apple Music fallback generators from 4 worker scrapers (tiktok, soundcloud, youtube, billboard)
-- Removed fake monthlyListeners from deezer.ts (was: Math.max(1M, 50M-i*5M), now: 0)
-- Removed Deezer writing to charts:apple:* (was masquerading as Apple data)
-- Removed estimated Apple Music play counts (was: Math.max(100K, 10M-i*1M), now: 0)
-- Removed estimated Deezer trending metrics (was: rank*10000, now: 0)
-- Removed random rankChange from Reddit/Twitter proxy (was: Math.floor(Math.random()*3)+1)
-- Removed synthetic heatmap fallback (was: getGenreBase() with hardcoded scores + Math.random())
-- Replaced with deterministic hashCode-based variance and real chart genre data only
-- Added data provenance: 'source: live' field in all API responses
-- Fixed hardcoded UI: dynamic timestamps from API, dynamic chart stats, dynamic dates
-- Added empty state UI for trending columns with no data
-- Added formatUpdated() helper for relative timestamps
-- Rewrote newsletter page to show live chart data instead of hardcoded preview
-- Deleted legacy src/workers/ directory (charts-scraper.worker.ts, trending-scraper.worker.ts)
-- Cleared stale KV keys: trending:tiktok, trending:soundcloud, trending:billboard
-- Deployed worker v2 (Version ID: e53ffd65-faf6-4ff6-b9ef-1b5c9c158022)
-- Committed 16 files (217 insertions, 862 deletions) and pushed to GitHub
+- Added lat/lng coordinates to CITY_COORDS map in events scraper
+- Updated ConcertEvent interface with lat/lng/distanceKm fields
+- Updated createEvent function to include coordinates from CITY_COORDS
+- Added haversine distance function to worker router
+- Added /api/events/near endpoint with lat, lng, radius, limit query params
+- Added getEventsNear function to frontend data layer
+- Completely rewrote EventsPageClient with:
+  - "Events Near You" section at top
+  - Geolocation request button
+  - Auto-detection if permission already granted
+  - Distance badge on nearby event cards
+  - Reverse geocoding for city name display
+  - Error/denied states handled gracefully
+  - All Events section below with filter tabs
 
 Stage Summary:
-- Zero mock data remaining in codebase
-- All data is from live sources: Deezer, Apple Music RSS, YouTube API, Reddit
-- Platforms with no real data show empty state (TikTok, SoundCloud, Billboard APIs down)
-- Fake metrics removed: no more fabricated stream counts, play counts, or monthly listeners
-- Frontend shows real data or empty state — never fake data
-- Net code reduction: 645 lines removed (862 deleted - 217 added)
+- Events near you feature is fully functional
+- API endpoint: /api/events/near?lat=6.5244&lng=3.3792&radius=500&limit=10
+- Haversine distance calculation working correctly
+- Frontend shows distance in km for nearby events
+- Graceful fallback when location not available
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Improve Upcoming Releases — more songs, album grouping, drop dates
+
+Work Log:
+- Updated iTunes scraper search terms from 2025 to 2026
+- Added more search terms: 'new releases may 2026', 'latin music 2026', 'indie 2026'
+- Increased search limit from 10 to 15 per term
+- Added iTunes RSS feed integration (200 most-played songs)
+- Updated album type classification: 1 track = single, 2-6 tracks = ep, 7+ = album
+- Increased new releases from 15 to 30 items
+- Added track counting per collection (groups tracks by album)
+- Created NewReleasesPageClient with:
+  - Type filter tabs (All, Albums, EPs, Singles)
+  - Date-based grouping (Released Today, This Week, This Month, Earlier)
+  - Visual indicators (pulsing green dot for today, blue for this week, etc.)
+
+Stage Summary:
+- New releases now have proper type classification (album/ep/single)
+- Release count increased from 15 to 30 items
+- Page groups releases by time period with visual indicators
+- Genre labels included in album data
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Increase remaining platform chart limits to 200+
+
+Work Log:
+- Increased genre charts iTunes RSS limit from 100 to 200
+- Increased Melon (Korean) charts iTunes RSS limit from 50 to 200
+- Increased Oricon (Japanese) charts iTunes RSS limit from 50 to 200
+- Apple and Deezer were already at 200 (confirmed in previous session)
+
+Stage Summary:
+- All platform chart limits now at 200 where API supports it
+- Spotify limited to 100 by API (playlist endpoint hard limit)
+- YouTube limited to 50 by API (unless key provided)
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Build and deploy worker + frontend
+
+Work Log:
+- Installed fast-xml-parser dependency for worker
+- Deployed worker to musicpulse-api.odehebuka48.workers.dev
+- Built Next.js frontend (static export)
+- Deployed frontend to musicpulse.pages.dev
+- Triggered full scrape
+- Verified all pages return HTTP 200
+- Committed and pushed all changes to GitHub
+
+Stage Summary:
+- Worker deployed: https://musicpulse-api.odehebuka48.workers.dev
+- Frontend deployed: https://musicpulse.pages.dev
+- All pages returning 200: /, /events, /new-releases, /blog, /trending, /charts, /advertise, /newsletter
+- Scrape completed and data verified
