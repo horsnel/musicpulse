@@ -1,26 +1,23 @@
 import type { Metadata } from 'next'
-import { SongDetailClient } from './SongDetailClient'
+import { SongSlugResolver } from './SongSlugResolver'
 
-interface Props { params: { slug: string } }
+interface Props {
+  params: Promise<{ slug: string }>
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const name = slug === '_template' ? 'Songs' : slug.replace(/-/g, ' ')
   return {
-    title: `${params.slug.replace(/-/g, ' ')} — MusicPulse`,
+    title: `${name} — MusicPulse`,
     description: 'Song details, chart performance, and streaming stats on MusicPulse.',
   }
 }
 
-export default function SongPage({ params }: Props) {
-  return <SongDetailClient slug={params.slug} />
+export function generateStaticParams() {
+  return [{ slug: '_template' }]
 }
 
-// Generate some static paths for SEO, but the client component handles any slug
-export function generateStaticParams() {
-  return [
-    { slug: 'apt-rose-bruno-mars' },
-    { slug: 'die-with-a-smile' },
-    { slug: 'birds-of-a-feather' },
-    { slug: 'espresso' },
-    { slug: 'not-like-us' },
-  ]
+export default function SongPage() {
+  return <SongSlugResolver />
 }

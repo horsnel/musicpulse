@@ -25,7 +25,7 @@ const FOOTER_COLS = [
       { label: 'Genius Lyrics',       href: '/trending/genius' },
       { label: 'iHeartRadio Charts',  href: '/trending/iheart' },
       { label: 'Musixmatch Lyrics',   href: '/trending/musixmatch' },
-      { label: 'Billboard Hot 100',   href: '/charts/billboard' },
+      { label: 'Billboard Hot 100',   href: '/trending/billboard' },
       { label: 'Country Charts',      href: '/charts/countries' },
     ],
   },

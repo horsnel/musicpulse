@@ -1,26 +1,24 @@
 import type { Metadata } from 'next'
-import { ArtistDetailClient } from './ArtistDetailClient'
+import { ArtistSlugResolver } from './ArtistSlugResolver'
 
-interface Props { params: { slug: string } }
+interface Props {
+  params: Promise<{ slug: string }>
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const name = slug === '_template' ? 'Artists' : slug.replace(/-/g, ' ')
   return {
-    title: `${params.slug.replace(/-/g, ' ')} — MusicPulse`,
+    title: `${name} — MusicPulse`,
     description: 'Artist profile, top songs, and streaming stats on MusicPulse.',
   }
 }
 
-export default function ArtistPage({ params }: Props) {
-  return <ArtistDetailClient slug={params.slug} />
+export function generateStaticParams() {
+  // Return a template slug so Cloudflare Pages can serve any dynamic slug
+  return [{ slug: '_template' }]
 }
 
-export function generateStaticParams() {
-  return [
-    { slug: 'burna-boy' },
-    { slug: 'kendrick-lamar' },
-    { slug: 'billie-eilish' },
-    { slug: 'rose' },
-    { slug: 'sabrina-carpenter' },
-    { slug: 'davido' },
-  ]
+export default function ArtistPage() {
+  return <ArtistSlugResolver />
 }

@@ -1,22 +1,15 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getArticles } from '@/lib/data'
 import { formatDate } from '@/lib/utils'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'MusicPulse Blog',
   description: 'Latest music news, chart analysis, and reviews — data-driven stories from the world of music.',
 }
 
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  news:           { bg: 'rgba(67,97,255,0.12)',   text: 'var(--blue)',   border: 'rgba(67,97,255,0.25)' },
-  review:         { bg: 'rgba(255,184,48,0.12)',   text: 'var(--gold)',   border: 'rgba(255,184,48,0.25)' },
-  feature:        { bg: 'rgba(176,108,255,0.12)',  text: 'var(--purple)', border: 'rgba(176,108,255,0.25)' },
-  'chart-analysis': { bg: 'rgba(29,185,84,0.12)',  text: 'var(--green)',  border: 'rgba(29,185,84,0.25)' },
-  interview:      { bg: 'rgba(255,45,107,0.12)',   text: 'var(--pink)',   border: 'rgba(255,45,107,0.25)' },
-}
-
-export default async function BlogPage() {
+// Blog listing page (at /blog)
+export default async function BlogListPage() {
   const articles = await getArticles(20)
 
   return (
@@ -66,7 +59,6 @@ export default async function BlogPage() {
                   rel={article.sourceUrl ? 'noopener noreferrer' : undefined}
                 >
                   <article className="mp-card group cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl h-full flex flex-col">
-                    {/* Hero image */}
                     <div
                       className="h-[160px] flex items-end p-5 bg-cover bg-center relative overflow-hidden"
                       style={article.imageUrl ? { backgroundImage: `url(${article.imageUrl})` } : {
@@ -81,7 +73,6 @@ export default async function BlogPage() {
                         {article.category.replace('-', ' ')}
                       </span>
                     </div>
-
                     <div className="p-5 flex flex-col flex-1">
                       <h2 className="text-[16px] font-bold tracking-[-0.02em] mb-2 group-hover:text-[var(--green)] transition-colors leading-snug line-clamp-2">
                         {article.title}
@@ -104,4 +95,12 @@ export default async function BlogPage() {
       </div>
     </div>
   )
+}
+
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  news:           { bg: 'rgba(67,97,255,0.12)',   text: 'var(--blue)',   border: 'rgba(67,97,255,0.25)' },
+  review:         { bg: 'rgba(255,184,48,0.12)',   text: 'var(--gold)',   border: 'rgba(255,184,48,0.25)' },
+  feature:        { bg: 'rgba(176,108,255,0.12)',  text: 'var(--purple)', border: 'rgba(176,108,255,0.25)' },
+  'chart-analysis': { bg: 'rgba(29,185,84,0.12)',  text: 'var(--green)',  border: 'rgba(29,185,84,0.25)' },
+  interview:      { bg: 'rgba(255,45,107,0.12)',   text: 'var(--pink)',   border: 'rgba(255,45,107,0.25)' },
 }

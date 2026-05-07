@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { getChartEntries } from '@/lib/data'
-import { ChartPlatformPageClient } from '../ChartPlatformClient'
+import { getTrending } from '@/lib/data'
+import { BillboardPageClient } from './BillboardPageClient'
 
 export const metadata: Metadata = {
   title: 'Billboard Hot 100',
@@ -8,15 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default async function BillboardChartsPage() {
-  const entries = await getChartEntries('billboard', 'us', 50)
+  // Billboard chart data in KV is often empty because the scraper uses Apple Music fallback.
+  // Trending data for billboard is more reliable, so use that.
+  const entries = await getTrending('billboard', 50)
 
-  return (
-    <ChartPlatformPageClient
-      platform="billboard"
-      label="Billboard Hot 100"
-      color="#e60026"
-      regionName="United States"
-      entries={entries}
-    />
-  )
+  return <BillboardPageClient entries={entries} />
 }

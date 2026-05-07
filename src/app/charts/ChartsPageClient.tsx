@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import type { ChartEntry, Platform, ChartRegion } from '@/types'
-import { formatCount, REGION_META } from '@/lib/utils'
+import { formatCount, REGION_META, slugify } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
@@ -39,26 +40,35 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
   const [region, setRegion] = useState<ChartRegion>(effectiveInitialRegion)
   const [regionIdx, setRegionIdx] = useState(() => REGIONS.indexOf(effectiveInitialRegion as any) >= 0 ? REGIONS.indexOf(effectiveInitialRegion as any) : 0)
   const [playingId, setPlayingId] = useState<string | null>(null)
-  const [posRange, setPosRange] = useState('Top 50')
-  const [entries, setEntries] = useState<ChartEntry[]>(initialEntries)
+  const [posRange, setPosRange] = useState('1-50')
+  const [allEntries, setAllEntries] = useState<ChartEntry[]>(initialEntries)
   const [countryCharts, setCountryCharts] = useState(initialCountryCharts)
   const [loading, setLoading] = useState(false)
 
   const activePlatform = PLATFORMS.find(p => p.id === platform)!
   const regionMeta = REGION_META[region]
 
+  // Compute displayed entries based on position range
+  const entries = (() => {
+    if (posRange === '1-50') return allEntries.slice(0, 50)
+    if (posRange === '51-100') return allEntries.slice(50, 100)
+    if (posRange === '101-200') return allEntries.slice(100, 200)
+    return allEntries.slice(0, 50)
+  })()
+
   // Fetch live chart data when platform or region changes
   useEffect(() => {
     async function fetchCharts() {
       setLoading(true)
       try {
-        const res = await fetch(`${API_URL}/api/charts?platform=${platform}&region=${region}&limit=50`, {
+        // Fetch 200 entries to support all position ranges
+        const res = await fetch(`${API_URL}/api/charts?platform=${platform}&region=${region}&limit=200`, {
           headers: { 'Accept': 'application/json' },
         })
         if (res.ok) {
           const json = await res.json()
           if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-            setEntries(json.data)
+            setAllEntries(json.data)
           }
         }
       } catch {
@@ -94,6 +104,9 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
     setRegionIdx(next)
     setRegion(REGIONS[next])
   }
+
+  // Total entries in current position range
+  const totalInRange = entries.length
 
   return (
     <div className="relative z-10">
@@ -142,7 +155,7 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                   <line x1="9" y1="1" x2="9" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                   <line x1="1" y1="5.5" x2="12" y2="5.5" stroke="currentColor" strokeWidth="1.2" />
                 </svg>
-                Apr 27, 2025
+                May 7, 2026
               </div>
             </div>
           </div>
@@ -152,7 +165,7 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
             {PLATFORMS.map(p => (
               <button
                 key={p.id}
-                onClick={() => setPlatform(p.id)}
+                onClick={() => { setPlatform(p.id); setPosRange('1-50'); }}
                 className={cn(
                   'flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 text-[12px] sm:text-[13px] font-semibold tracking-[-0.01em] border-none cursor-pointer transition-all whitespace-nowrap border-b-2 -mb-px',
                   platform === p.id
@@ -188,21 +201,24 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
               <div>
                 <div className="text-[13px] sm:text-[14px] font-bold tracking-[-0.02em]">{activePlatform.label}</div>
                 <div className="text-[11px] sm:text-[12px] text-[var(--text3)] font-medium">
-                  {regionMeta.name} · Updated 47 min ago
+                  {regionMeta.name} · {loading ? 'Loading...' : `${allEntries.length} entries`}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {/* Position range filter */}
               <div className="flex gap-0.5 bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-[3px]">
-                {['Top 50', '51–100', '101–200'].map(r => (
+                {['1-50', '51-100', '101-200'].map(r => (
                   <button
                     key={r}
                     onClick={() => setPosRange(r)}
+                    disabled={r !== '1-50' && allEntries.length < parseInt(r.split('-')[0])}
                     className={cn(
                       'px-2 sm:px-3 py-[5px] rounded-md text-[10px] sm:text-[11.5px] font-semibold cursor-pointer border-none transition-all',
                       r === posRange
                         ? 'bg-[var(--bg4)] text-[var(--text)] shadow-sm'
+                        : allEntries.length < parseInt(r.split('-')[0])
+                        ? 'text-[var(--text3)] opacity-40 cursor-not-allowed bg-transparent'
                         : 'text-[var(--text3)] hover:text-[var(--text2)] bg-transparent',
                     )}
                   >
@@ -213,27 +229,48 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
             </div>
           </div>
 
-          {/* Desktop column headers - hidden on mobile */}
-          <div className="hidden md:grid items-center px-[22px] h-9 border-b border-[var(--border)] bg-[var(--bg3)]"
-            style={{ gridTemplateColumns: '52px 48px 1fr 100px 110px 80px 90px 50px' }}
-          >
-            {['#', '', 'Song', 'Streams', 'Peak', 'Weeks', '7d Trend', ''].map((h, i) => (
-              <div key={i} className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--text3)] pl-3 first:pl-0 first:text-center">
-                {h}
+          {/* Empty state for range */}
+          {totalInRange === 0 && !loading && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-3" style={{ background: `${activePlatform.color}18` }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke={activePlatform.color} strokeWidth="1.5" fill="none" />
+                  <path d="M8 16V11M12 16V8M16 16V13" stroke={activePlatform.color} strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
               </div>
-            ))}
-          </div>
+              <p className="text-[14px] font-semibold text-[var(--text)] mb-1">No entries for positions {posRange}</p>
+              <p className="text-[12px] text-[var(--text3)]">
+                {allEntries.length > 0
+                  ? `Only ${allEntries.length} entries available for this chart.`
+                  : 'No chart data available for this platform/region combination.'}
+              </p>
+            </div>
+          )}
+
+          {/* Desktop column headers - hidden on mobile */}
+          {totalInRange > 0 && (
+            <div className="hidden md:grid items-center px-[22px] h-9 border-b border-[var(--border)] bg-[var(--bg3)]"
+              style={{ gridTemplateColumns: '52px 48px 1fr 100px 110px 80px 90px 50px' }}
+            >
+              {['#', '', 'Song', 'Streams', 'Peak', 'Weeks', '7d Trend', ''].map((h, i) => (
+                <div key={i} className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--text3)] pl-3 first:pl-0 first:text-center">
+                  {h}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Desktop rows - hidden on mobile */}
           <div className="hidden md:block">
             {entries.map(entry => {
               const isPlaying = playingId === entry.id
+              const songSlug = slugify(entry.song.title + '-' + entry.song.artistName)
               return (
-                <div
+                <Link
                   key={entry.id}
-                  onClick={() => setPlayingId(isPlaying ? null : entry.id)}
+                  href={`/songs/${songSlug}`}
                   className={cn(
-                    'grid items-center px-[22px] h-[66px] border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors',
+                    'grid items-center px-[22px] h-[66px] border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors no-underline',
                     isPlaying ? 'bg-[rgba(29,185,84,0.05)]' : 'hover:bg-[rgba(255,255,255,0.025)]',
                     entry.isNewEntry ? 'bg-[rgba(67,97,255,0.04)]' : '',
                   )}
@@ -273,14 +310,9 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                   <div className="pl-3.5 min-w-0">
                     <div className={cn(
                       'text-[14px] font-bold tracking-[-0.02em] truncate',
-                      isPlaying ? 'text-[var(--green)]' : '',
+                      isPlaying ? 'text-[var(--green)]' : 'text-[var(--text)]',
                     )}>
-                      {isPlaying ? (
-                        <span className="inline-flex items-center gap-2">
-                          <span className="playing-bars" style={{ '--bar-color': 'var(--green)' } as React.CSSProperties} />
-                          {entry.song.title}
-                        </span>
-                      ) : entry.song.title}
+                      {entry.song.title}
                     </div>
                     <div className="text-[12px] text-[var(--text3)] font-medium mt-0.5 truncate">
                       {entry.song.artistName}
@@ -317,11 +349,11 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                     )}
                   </div>
                   <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[var(--text3)] hover:bg-[var(--bg3)] hover:text-[var(--text2)] transition-all border border-transparent hover:border-[var(--border)]">
+                    <span className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[var(--text3)]">
                       <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="2,1 10,5.5 2,10" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round"/></svg>
-                    </button>
+                    </span>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
@@ -330,12 +362,13 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
           <div className="md:hidden">
             {entries.map(entry => {
               const isPlaying = playingId === entry.id
+              const songSlug = slugify(entry.song.title + '-' + entry.song.artistName)
               return (
-                <div
+                <Link
                   key={entry.id}
-                  onClick={() => setPlayingId(isPlaying ? null : entry.id)}
+                  href={`/songs/${songSlug}`}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors',
+                    'flex items-center gap-3 px-4 py-3 border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors no-underline',
                     isPlaying ? 'bg-[rgba(29,185,84,0.05)]' : 'hover:bg-[rgba(255,255,255,0.025)]',
                     entry.isNewEntry ? 'bg-[rgba(67,97,255,0.04)]' : '',
                   )}
@@ -379,7 +412,7 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                   <div className="min-w-0 flex-1">
                     <div className={cn(
                       'text-[13px] font-bold tracking-[-0.02em] truncate',
-                      isPlaying ? 'text-[var(--green)]' : '',
+                      isPlaying ? 'text-[var(--green)]' : 'text-[var(--text)]',
                     )}>
                       {entry.song.title}
                     </div>
@@ -400,17 +433,9 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                       Peak #{entry.peakPosition}
                     </span>
                   </div>
-                </div>
+                </Link>
               )
             })}
-          </div>
-
-          {/* Load more */}
-          <div className="flex items-center justify-center gap-2 py-4 sm:py-5 text-[12px] sm:text-[13px] font-semibold text-[var(--text3)] cursor-pointer hover:text-[var(--text2)] transition-colors border-t border-[var(--border)]">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <polyline points="3,5 7,9 11,5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-            Show positions 11–50
           </div>
         </div>
 
@@ -423,9 +448,9 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
             </div>
             <div className="grid grid-cols-2 gap-px bg-[var(--border)]">
               {[
-                { k: 'Total Streams', v: '1.82B', sub: 'Top 200 combined', color: 'var(--green)' },
-                { k: 'New Entries', v: '12', sub: 'This week', color: 'var(--blue)' },
-                { k: 'Biggest Mover', v: '+18 ↑', sub: 'Beautiful Things', color: 'var(--pink)' },
+                { k: 'Total Streams', v: formatCount(allEntries.reduce((s, e) => s + (e.streams || 0), 0)) || '1.82B', sub: 'Top 200 combined', color: 'var(--green)' },
+                { k: 'New Entries', v: String(allEntries.filter(e => e.isNewEntry).length || 12), sub: 'This week', color: 'var(--blue)' },
+                { k: 'Biggest Mover', v: allEntries.length > 0 ? `+${Math.max(...allEntries.map(e => e.positionChange), 0)} ↑` : '+18 ↑', sub: allEntries.length > 0 ? allEntries.reduce((best, e) => e.positionChange > best.positionChange ? e : best, allEntries[0])?.song?.title || 'Top climber' : 'Beautiful Things', color: 'var(--pink)' },
                 { k: 'Countries', v: '200', sub: 'Charts tracked', color: 'var(--text)' },
               ].map(s => (
                 <div key={s.k} className="bg-[var(--bg2)] p-3 sm:p-4">
@@ -457,7 +482,7 @@ export function ChartsPageClient({ initialEntries, countryCharts: initialCountry
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] sm:text-[13px] font-semibold tracking-[-0.01em] text-[var(--text)]">{c.name}</div>
                     <div className="text-[10px] sm:text-[11.5px] text-[var(--text3)] font-medium mt-0.5 truncate">
-                      #1 {c.topSong}
+                      #1 {c.topSong && c.topSong !== '—' ? c.topSong : 'Loading...'}
                     </div>
                   </div>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-[var(--text3)] flex-shrink-0">

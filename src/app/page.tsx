@@ -226,10 +226,8 @@ function EventCard({ event }: { event: ConcertEvent }) {
 
   return (
     <a
-      href={event.ticketUrl || `/events`}
+      href={`/events/${event.slug || event.id}`}
       className="block no-underline"
-      target={event.ticketUrl ? '_blank' : undefined}
-      rel={event.ticketUrl ? 'noopener noreferrer' : undefined}
     >
       <div className="mp-card group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg h-full flex flex-col">
         {/* Image */}

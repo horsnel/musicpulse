@@ -17,6 +17,7 @@ interface SearchResult {
   artistName: string
   songId?: string
   artistSlug?: string
+  albumCoverUrl?: string
 }
 
 const PLATFORMS_TO_SEARCH = ['spotify', 'apple', 'youtube', 'tiktok', 'twitter', 'soundcloud', 'billboard'] as const
@@ -88,6 +89,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                 artistName: item.artistName ?? '',
                 songId: item.songId,
                 artistSlug: item.artistSlug,
+                albumCoverUrl: item.albumCoverUrl,
               })
             }
           } catch {
@@ -129,8 +131,19 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
   }
 
   // Navigate and close
-  function handleResultClick(platform: string, artistSlug?: string) {
+  function handleResultClick(platform: string, item: SearchResult) {
     onClose()
+  }
+
+  // Generate the song slug from title and artist
+  function getSongSlug(item: SearchResult): string {
+    const raw = `${item.songTitle}-${item.artistName}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    return raw
   }
 
   // Group results by platform
@@ -225,17 +238,23 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
 
               {/* Results for this platform */}
               {items.map((item, i) => {
-                const href = item.artistSlug
-                  ? `/artists/${item.artistSlug}`
-                  : `/trending/${platform}`
+                const songSlug = getSongSlug(item)
+                const href = `/songs/${songSlug}`
                 return (
                   <Link
                     key={`${platform}-${i}-${item.songTitle}`}
                     href={href}
-                    onClick={() => handleResultClick(platform, item.artistSlug)}
+                    onClick={() => handleResultClick(platform, item)}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg3)] transition-colors no-underline"
                   >
-                    <MiniPlatformIcon platform={platform as TrendingPlatform} size={12} />
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-[var(--border)]"
+                      style={{ background: item.albumCoverUrl ? 'var(--bg3)' : 'var(--bg2)' }}>
+                      {item.albumCoverUrl ? (
+                        <img src={item.albumCoverUrl} alt={item.songTitle} className="w-full h-full object-cover" />
+                      ) : (
+                        <MiniPlatformIcon platform={platform as TrendingPlatform} size={14} />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium text-[var(--text)] truncate">
                         {item.songTitle}

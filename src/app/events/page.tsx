@@ -7,8 +7,7 @@ export const metadata: Metadata = {
   description: 'Upcoming and ongoing concerts, festivals, and tours from top artists worldwide.',
 }
 
-export default async function EventsPage() {
+export default async function EventsListPage() {
   const events = await getEvents(20)
-
   return <EventsPageClient events={events} />
 }

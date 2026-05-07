@@ -39,15 +39,14 @@ export function EventsPageClient({ events }: Props) {
   const fetchNearby = useCallback(async (lat: number, lng: number) => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://musicpulse-api.odehebuka48.workers.dev'
-      const res = await fetch(`${API_URL}/api/events/near?lat=${lat}&lng=${lng}&radius=2000&limit=6`)
+      // Use 500km radius for more realistic nearby results
+      const res = await fetch(`${API_URL}/api/events/near?lat=${lat}&lng=${lng}&radius=500&limit=6`)
       if (res.ok) {
         const json = await res.json()
         if (json.data && Array.isArray(json.data) && json.data.length > 0) {
           setNearbyEvents(json.data)
-          setLocationStatus('found')
-        } else {
-          setLocationStatus('found')
         }
+        setLocationStatus('found')
       }
     } catch {
       // Silently fail - nearby is an enhancement, not critical
@@ -175,8 +174,8 @@ export function EventsPageClient({ events }: Props) {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2">
                 <path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 11 7 11s7-5.7 7-11c0-3.9-3.1-7-7-7z" stroke="currentColor" strokeWidth="1.5" fill="none" />
               </svg>
-              <p className="text-[13px] font-medium">No events found within 2,000 km of your location.</p>
-              <p className="text-[11px] mt-1">Check out all events below or try a different area.</p>
+              <p className="text-[13px] font-medium">No events found within 500 km of your location.</p>
+              <p className="text-[11px] mt-1">Check out all events below, or broaden your search area.</p>
             </div>
           ) : locationStatus === 'idle' || locationStatus === 'loading' ? (
             <div className="mp-card p-6 text-center text-[var(--text3)]">
@@ -239,6 +238,7 @@ function EventCard({ event, showDistance }: { event: ConcertEvent; showDistance?
   const typeStyle = TYPE_STYLES[event.type] ?? TYPE_STYLES.concert
 
   return (
+    <Link href={`/events/${event.slug || event.id}`} className="block no-underline">
     <div className="mp-card group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl h-full flex flex-col overflow-hidden">
       {/* Hero image */}
       <div
@@ -293,6 +293,7 @@ function EventCard({ event, showDistance }: { event: ConcertEvent; showDistance?
             rel="noopener noreferrer"
             className="mt-3 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold no-underline transition-all"
             style={{ background: 'var(--gold)', color: '#000' }}
+            onClick={(e) => e.stopPropagation()}
           >
             Get Tickets
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -303,5 +304,6 @@ function EventCard({ event, showDistance }: { event: ConcertEvent; showDistance?
         )}
       </div>
     </div>
+    </Link>
   )
 }
