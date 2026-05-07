@@ -29,6 +29,11 @@ export interface Env {
   SCRAPE_SECRET?: string
   ENVIRONMENT?: string
   ALLOWED_ORIGINS?: string  // CORS origins for the frontend (comma-separated)
+
+  // News / Media APIs
+  NEWSAPI_KEY?: string          // newsapi.org key
+  NEWSDATAIO_KEY?: string       // newsdata.io key
+  PIXABAY_API_KEY?: string      // pixabay.com key for stock images
 }
 
 export default {

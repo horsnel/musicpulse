@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import type { ConcertEvent } from '@/types'
 import { formatDate, cn } from '@/lib/utils'
@@ -25,12 +25,83 @@ const TYPE_STYLES: Record<string, { variant: 'blue' | 'purple' | 'green' | 'pink
 
 export function EventsPageClient({ events }: Props) {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [nearbyEvents, setNearbyEvents] = useState<ConcertEvent[]>([])
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'found' | 'denied' | 'error'>('idle')
+  const [userCity, setUserCity] = useState('')
 
   const filters = ['all', 'upcoming', 'ongoing', 'sold-out']
 
   const filtered = activeFilter === 'all'
     ? events
     : events.filter(e => e.status === activeFilter)
+
+  // Fetch nearby events when location is available
+  const fetchNearby = useCallback(async (lat: number, lng: number) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://musicpulse-api.odehebuka48.workers.dev'
+      const res = await fetch(`${API_URL}/api/events/near?lat=${lat}&lng=${lng}&radius=2000&limit=6`)
+      if (res.ok) {
+        const json = await res.json()
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          setNearbyEvents(json.data)
+          setLocationStatus('found')
+        } else {
+          setLocationStatus('found')
+        }
+      }
+    } catch {
+      // Silently fail - nearby is an enhancement, not critical
+    }
+  }, [])
+
+  // Request geolocation
+  const requestLocation = useCallback(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationStatus('error')
+      return
+    }
+
+    setLocationStatus('loading')
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        await fetchNearby(latitude, longitude)
+
+        // Try reverse geocoding for city name
+        try {
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+          if (res.ok) {
+            const data = await res.json()
+            setUserCity(data.city || data.locality || 'your area')
+          }
+        } catch {
+          setUserCity('your area')
+        }
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationStatus('denied')
+        } else {
+          setLocationStatus('error')
+        }
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    )
+  }, [fetchNearby])
+
+  // Auto-request location on mount
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      // Check if permission is already granted
+      navigator.permissions?.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'granted') {
+          requestLocation()
+        }
+      }).catch(() => {
+        // permissions API not supported, don't auto-request
+      })
+    }
+  }, [requestLocation])
 
   return (
     <div className="relative z-10">
@@ -54,6 +125,71 @@ export function EventsPageClient({ events }: Props) {
 
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-10 sm:pb-20">
         <div className="h-px bg-[var(--border)] mb-6 sm:mb-8" />
+
+        {/* Events Near You Section */}
+        <section className="mb-10 sm:mb-14">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-[20px] sm:text-[24px] font-black tracking-[-0.03em] flex items-center gap-2.5">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2C7.2 2 5 4.2 5 7c0 4.2 5 9 5 9s5-4.8 5-9c0-2.8-2.2-5-5-5z" stroke="var(--gold)" strokeWidth="1.5" fill="none" />
+                <circle cx="10" cy="7" r="2" stroke="var(--gold)" strokeWidth="1.2" fill="none" />
+              </svg>
+              {locationStatus === 'found' && userCity ? `Events Near ${userCity}` : 'Events Near You'}
+            </h2>
+            {locationStatus === 'idle' && (
+              <button
+                onClick={requestLocation}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold no-underline transition-all border-none cursor-pointer"
+                style={{ background: 'var(--gold)', color: '#000' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="4" stroke="#000" strokeWidth="1.2" fill="none" />
+                  <circle cx="6" cy="6" r="1" fill="#000" />
+                </svg>
+                Enable Location
+              </button>
+            )}
+            {locationStatus === 'loading' && (
+              <span className="text-[12px] text-[var(--text3)] font-medium flex items-center gap-1.5">
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="5" stroke="var(--text3)" strokeWidth="1.5" fill="none" strokeDasharray="20 12" />
+                </svg>
+                Finding your location...
+              </span>
+            )}
+            {locationStatus === 'denied' && (
+              <span className="text-[11px] text-[var(--text3)] font-medium px-3 py-1.5 rounded-full" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+                Location access denied
+              </span>
+            )}
+          </div>
+
+          {nearbyEvents.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {nearbyEvents.map(event => (
+                <EventCard key={event.id} event={event} showDistance />
+              ))}
+            </div>
+          ) : locationStatus === 'found' ? (
+            <div className="mp-card p-6 text-center text-[var(--text3)]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2">
+                <path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 11 7 11s7-5.7 7-11c0-3.9-3.1-7-7-7z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+              <p className="text-[13px] font-medium">No events found within 2,000 km of your location.</p>
+              <p className="text-[11px] mt-1">Check out all events below or try a different area.</p>
+            </div>
+          ) : locationStatus === 'idle' || locationStatus === 'loading' ? (
+            <div className="mp-card p-6 text-center text-[var(--text3)]">
+              <p className="text-[13px] font-medium">Enable your location to discover events near you.</p>
+            </div>
+          ) : null}
+        </section>
+
+        {/* Divider */}
+        <div className="h-px bg-[var(--border)] mb-6 sm:mb-8" />
+
+        {/* All Events Section */}
+        <h2 className="text-[20px] sm:text-[24px] font-black tracking-[-0.03em] mb-5">All Events</h2>
 
         {/* Filter tabs */}
         <div className="flex gap-0.5 bg-[var(--bg2)] border border-[var(--border)] rounded-xl p-[3px] w-fit mb-6 sm:mb-8">
@@ -86,74 +222,84 @@ export function EventsPageClient({ events }: Props) {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-            {filtered.map(event => {
-              const statusStyle = STATUS_STYLES[event.status] ?? STATUS_STYLES.upcoming
-              const typeStyle = TYPE_STYLES[event.type] ?? TYPE_STYLES.concert
-              return (
-                <div key={event.id} className="mp-card group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl h-full flex flex-col overflow-hidden">
-                  {/* Hero image */}
-                  <div
-                    className="h-[180px] bg-cover bg-center relative"
-                    style={event.imageUrl ? { backgroundImage: `url(${event.imageUrl})` } : {
-                      background: 'linear-gradient(135deg, #642b73, #c6426e)',
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg2)] via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-4 right-4 flex items-center gap-2 flex-wrap">
-                      <Badge variant={typeStyle.variant}>{typeStyle.label}</Badge>
-                      <Badge variant={statusStyle.variant}>{statusStyle.label}</Badge>
-                    </div>
-                  </div>
-
-                  <div className="p-4 sm:p-5 flex flex-col flex-1">
-                    <h3 className="text-[15px] sm:text-[16px] font-bold tracking-[-0.02em] mb-1 group-hover:text-[var(--gold)] transition-colors line-clamp-2">
-                      {event.title}
-                    </h3>
-                    <Link
-                      href={`/artists/${event.artistSlug}`}
-                      className="text-[13px] font-semibold text-[var(--green)] hover:underline no-underline mb-2.5"
-                    >
-                      {event.artist}
-                    </Link>
-
-                    <div className="flex flex-col gap-1.5 mt-auto">
-                      <div className="flex items-center gap-2 text-[12px] text-[var(--text3)] font-medium">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path d="M6 1C3.8 1 2 2.8 2 5c0 3 4 6 4 6s4-3 4-6c0-2.2-1.8-4-4-4z" stroke="currentColor" strokeWidth="1" fill="none" />
-                          <circle cx="6" cy="5" r="1.5" stroke="currentColor" strokeWidth="0.8" fill="none" />
-                        </svg>
-                        <span className="truncate">{event.venue}, {event.city}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[12px] text-[var(--text3)] font-medium">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <rect x="1.5" y="2.5" width="9" height="8" rx="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
-                          <line x1="4" y1="1" x2="4" y2="3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-                          <line x1="8" y1="1" x2="8" y2="3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-                        </svg>
-                        <span>{formatDate(event.date)}</span>
-                      </div>
-                    </div>
-
-                    {event.ticketUrl && (
-                      <a
-                        href={event.ticketUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold no-underline transition-all"
-                        style={{ background: 'var(--gold)', color: '#000' }}
-                      >
-                        Get Tickets
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <line x1="1" y1="5" x2="8" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                          <polyline points="5,2 8,5 5,8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-                        </svg>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+            {filtered.map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Event Card Component ──────────────────────────────────────────
+
+function EventCard({ event, showDistance }: { event: ConcertEvent; showDistance?: boolean }) {
+  const statusStyle = STATUS_STYLES[event.status] ?? STATUS_STYLES.upcoming
+  const typeStyle = TYPE_STYLES[event.type] ?? TYPE_STYLES.concert
+
+  return (
+    <div className="mp-card group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl h-full flex flex-col overflow-hidden">
+      {/* Hero image */}
+      <div
+        className="h-[180px] bg-cover bg-center relative"
+        style={event.imageUrl ? { backgroundImage: `url(${event.imageUrl})` } : {
+          background: 'linear-gradient(135deg, #642b73, #c6426e)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg2)] via-transparent to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4 flex items-center gap-2 flex-wrap">
+          <Badge variant={typeStyle.variant}>{typeStyle.label}</Badge>
+          <Badge variant={statusStyle.variant}>{statusStyle.label}</Badge>
+          {showDistance && event.distanceKm !== undefined && (
+            <Badge variant="gold">{event.distanceKm} km</Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        <h3 className="text-[15px] sm:text-[16px] font-bold tracking-[-0.02em] mb-1 group-hover:text-[var(--gold)] transition-colors line-clamp-2">
+          {event.title}
+        </h3>
+        <Link
+          href={`/artists/${event.artistSlug}`}
+          className="text-[13px] font-semibold text-[var(--green)] hover:underline no-underline mb-2.5"
+        >
+          {event.artist}
+        </Link>
+
+        <div className="flex flex-col gap-1.5 mt-auto">
+          <div className="flex items-center gap-2 text-[12px] text-[var(--text3)] font-medium">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1C3.8 1 2 2.8 2 5c0 3 4 6 4 6s4-3 4-6c0-2.2-1.8-4-4-4z" stroke="currentColor" strokeWidth="1" fill="none" />
+              <circle cx="6" cy="5" r="1.5" stroke="currentColor" strokeWidth="0.8" fill="none" />
+            </svg>
+            <span className="truncate">{event.venue}, {event.city}</span>
+          </div>
+          <div className="flex items-center gap-2 text-[12px] text-[var(--text3)] font-medium">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="1.5" y="2.5" width="9" height="8" rx="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
+              <line x1="4" y1="1" x2="4" y2="3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="8" y1="1" x2="8" y2="3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+            </svg>
+            <span>{formatDate(event.date)}</span>
+          </div>
+        </div>
+
+        {event.ticketUrl && (
+          <a
+            href={event.ticketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold no-underline transition-all"
+            style={{ background: 'var(--gold)', color: '#000' }}
+          >
+            Get Tickets
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <line x1="1" y1="5" x2="8" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <polyline points="5,2 8,5 5,8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+            </svg>
+          </a>
         )}
       </div>
     </div>

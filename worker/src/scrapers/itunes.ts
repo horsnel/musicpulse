@@ -43,13 +43,16 @@ export async function scrapeITunes(env: Env): Promise<void> {
 
   try {
     // Fetch new releases by searching for recent popular terms
-    const searchTerms = ['new music 2025', 'top hits', 'afrobeats 2025', 'kpop 2025']
+    const searchTerms = [
+      'new music 2026', 'top hits 2026', 'afrobeats 2026', 'kpop 2026',
+      'new releases may 2026', 'latin music 2026', 'indie 2026',
+    ]
     const allTracks: iTunesTrack[] = []
     const seenIds = new Set<number>()
 
     for (const term of searchTerms) {
       try {
-        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=10&country=us`
+        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=15&country=us`
         const res = await fetch(url, {
           headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
         })
@@ -74,38 +77,83 @@ export async function scrapeITunes(env: Env): Promise<void> {
       }
     }
 
+    // Also fetch from iTunes RSS feeds for new releases
+    try {
+      const rssUrl = 'https://rss.applemarketingtools.com/api/v2/us/music/most-played/200/songs.json'
+      const rssRes = await fetch(rssUrl, {
+        headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
+      })
+      if (rssRes.ok) {
+        const rssData = await rssRes.json() as any
+        const feed = rssData?.feed?.results ?? []
+        for (const item of feed) {
+          const trackId = item.id
+          if (trackId && !seenIds.has(Number(trackId))) {
+            seenIds.add(Number(trackId))
+            allTracks.push({
+              trackId: Number(trackId),
+              trackName: item.name || '',
+              artistId: Number(item.artistId) || 0,
+              artistName: item.artistName || '',
+              collectionId: Number(item.collectionId) || 0,
+              collectionName: item.collectionName || '',
+              artworkUrl100: item.artworkUrl100?.replace('100x100', '600x600') || '',
+              releaseDate: item.releaseDate || '',
+              primaryGenreName: item.genres?.[0]?.name || '',
+              trackTimeMillis: item.durationInMillis || 0,
+              trackViewUrl: item.url || '',
+              previewUrl: '',
+              isStreamable: true,
+            })
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[itunes] RSS feed error:', err)
+    }
+
     // Generate new releases from iTunes data
     if (allTracks.length > 0) {
-      // Deduplicate by collection (album)
-      const albumMap = new Map<number, iTunesTrack>()
+      // Deduplicate by collection (album) and group tracks
+      const albumMap = new Map<number, { track: iTunesTrack; trackCount: number; tracks: iTunesTrack[] }>()
       for (const track of allTracks) {
-        if (track.collectionId && !albumMap.has(track.collectionId)) {
-          albumMap.set(track.collectionId, track)
+        if (track.collectionId) {
+          const existing = albumMap.get(track.collectionId)
+          if (existing) {
+            existing.trackCount++
+            existing.tracks.push(track)
+          } else {
+            albumMap.set(track.collectionId, { track, trackCount: 1, tracks: [track] })
+          }
         }
       }
 
       const newReleases = Array.from(albumMap.values())
-        .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
-        .slice(0, 15)
-        .map((track, i) => ({
-          id: `itunes-album-${i}`,
-          slug: slugify(track.collectionName + '-' + track.artistName),
-          title: track.collectionName,
-          artistId: `itunes:${track.artistId}`,
-          artistName: track.artistName,
-          releaseDate: track.releaseDate?.split('T')[0] || '',
-          type: 'album' as const,
-          trackCount: 0,
-          coverUrl: track.artworkUrl100?.replace('100x100', '600x600'),
-          isLatest: i === 0,
-        }))
+        .sort((a, b) => new Date(b.track.releaseDate).getTime() - new Date(a.track.releaseDate).getTime())
+        .slice(0, 30)
+        .map(({ track, trackCount }, i) => {
+          // Determine release type based on track count
+          let type: 'album' | 'ep' | 'single' = 'album'
+          if (trackCount === 1) type = 'single'
+          else if (trackCount <= 6) type = 'ep'
 
-      // Only write if we don't already have new releases from another source
-      const existing = await readKV<any>(env, 'albums:new')
-      if (!existing?.items || existing.items.length === 0) {
-        await writeKV(env, 'albums:new', newReleases)
-        console.log(`[itunes] ${newReleases.length} new releases written`)
-      }
+          return {
+            id: `itunes-album-${i}`,
+            slug: slugify(track.collectionName + '-' + track.artistName),
+            title: track.collectionName,
+            artistId: `itunes:${track.artistId}`,
+            artistName: track.artistName,
+            releaseDate: track.releaseDate?.split('T')[0] || '',
+            type,
+            trackCount,
+            coverUrl: track.artworkUrl100?.replace('100x100', '600x600'),
+            isLatest: i === 0,
+            label: track.primaryGenreName || '',
+          }
+        })
+
+      await writeKV(env, 'albums:new', newReleases)
+      console.log(`[itunes] ${newReleases.length} new releases written`)
 
       // Also use iTunes to enrich trending data with album covers
       // Check for missing album covers in trending data

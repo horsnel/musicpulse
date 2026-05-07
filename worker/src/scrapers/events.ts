@@ -34,6 +34,8 @@ export interface ConcertEvent {
   ticketUrl?: string
   description: string
   slug: string
+  lat?: number
+  lng?: number
 }
 
 interface TrendingItem {
@@ -138,6 +140,23 @@ const COUNTRY_MAP: Record<string, string> = {
   'Mumbai': 'India',
   'São Paulo': 'Brazil',
   'Dubai': 'United Arab Emirates',
+}
+
+// Approximate coordinates for each city (for "near you" feature)
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  'New York': { lat: 40.7128, lng: -74.0060 },
+  'Los Angeles': { lat: 34.0522, lng: -118.2437 },
+  'London': { lat: 51.5074, lng: -0.1278 },
+  'Lagos': { lat: 6.5244, lng: 3.3792 },
+  'Seoul': { lat: 37.5665, lng: 126.9780 },
+  'Tokyo': { lat: 35.6762, lng: 139.6503 },
+  'Paris': { lat: 48.8566, lng: 2.3522 },
+  'Berlin': { lat: 52.5200, lng: 13.4050 },
+  'Sydney': { lat: -33.8688, lng: 151.2093 },
+  'Toronto': { lat: 43.6532, lng: -79.3832 },
+  'Mumbai': { lat: 19.0760, lng: 72.8777 },
+  'São Paulo': { lat: -23.5505, lng: -46.6333 },
+  'Dubai': { lat: 25.2048, lng: 55.2708 },
 }
 
 const FESTIVAL_NAMES = [
@@ -384,6 +403,7 @@ function createEvent(opts: {
   title: string
   description: string
 }): ConcertEvent {
+  const coords = CITY_COORDS[opts.city]
   return {
     id: opts.id,
     title: opts.title,
@@ -400,6 +420,8 @@ function createEvent(opts: {
     ticketUrl: `https://musicpulse.app/events/${slugify(opts.title)}`,
     description: opts.description,
     slug: slugify(opts.title),
+    lat: coords?.lat,
+    lng: coords?.lng,
   }
 }
 

@@ -50,7 +50,7 @@ export async function scrapeGenreCharts(env: Env): Promise<void> {
   console.log('[genre-charts] Starting...')
   
   try {
-    const url = `${ITUNES_RSS_BASE}/us/rss/topsongs/limit=100/json`
+    const url = `${ITUNES_RSS_BASE}/us/rss/topsongs/limit=200/json`
     const res = await fetch(url, {
       headers: { 'User-Agent': 'MusicPulse/1.0 (contact@musicpulse.com)' },
       redirect: 'follow',

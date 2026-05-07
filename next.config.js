@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
@@ -6,8 +8,9 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  // Optional: enable if you add ISR workers
-  // experimental: { ppr: true },
+  turbopack: {
+    root: __dirname,
+  },
 }
 
 module.exports = nextConfig

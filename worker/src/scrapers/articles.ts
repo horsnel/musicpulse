@@ -1,14 +1,14 @@
 /**
- * Article/Blog Scraper
+ * Article/Blog Scraper — Real API Edition
  *
- * Generates synthetic but realistic music journalism content
- * based on trending chart data from KV.
+ * Fetches real music news from NewsAPI.org and NewsDataIO,
+ * enriches with Pixabay stock images when article images are missing,
+ * and falls back to synthetic articles from trending chart data.
  *
- * Strategy:
- *  1. Read trending data from KV to identify top songs/artists
- *  2. Generate article-like content about what's trending
- *  3. Use album artwork from trending data as article images
- *  4. Create 10 articles: 3 chart-analysis, 3 news, 2 feature, 2 review
+ * API keys (optional — gracefully degrades):
+ *  - NEWSAPI_KEY     → newsapi.org (100 req/day free)
+ *  - NEWSDATAIO_KEY  → newsdata.io (200 req/day free)
+ *  - PIXABAY_API_KEY → pixabay.com (5000 req/hour free)
  *
  * Stores in KV key: articles:latest
  */
@@ -78,136 +78,386 @@ const SOURCES = [
   'Rhythm & News',
 ]
 
+// Pixabay image cache (per-scrape)
+const pixabayCache = new Map<string, string>()
+
 // ── Main scraper ──────────────────────────────────────────────
 
 export async function scrapeArticles(env: Env): Promise<void> {
   console.log('[articles] Starting...')
 
   try {
-    // Collect trending items from all platforms
-    const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
-    const allTrending: TrendingItem[] = []
-
-    for (const platform of platforms) {
-      const data = await readKV<TrendingItem>(env, `trending:${platform}`)
-      if (data?.items) {
-        allTrending.push(...data.items)
-      }
-    }
-
-    // Also read cross-platform data
-    const crossPlatformData = await readKV<CrossPlatformEntry>(env, 'cross-platform')
-    const crossPlatform = crossPlatformData?.items ?? []
-
-    // If we have no data at all, skip
-    if (allTrending.length === 0 && crossPlatform.length === 0) {
-      console.log('[articles] No trending data available — skipping')
-      return
-    }
-
-    // Deduplicate and rank songs (use best rank across platforms)
-    const songMap = new Map<string, TrendingItem & { platforms: string[]; totalMetric: number }>()
-    for (const item of allTrending) {
-      const key = `${item.songTitle.toLowerCase().replace(/[^a-z0-9]/g, '')}::${item.artistName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
-      const existing = songMap.get(key)
-      if (existing) {
-        existing.platforms = [...new Set([...existing.platforms, item.platform])]
-        existing.totalMetric += item.metric || 0
-        if (item.rank < existing.rank) existing.rank = item.rank
-        if (!existing.albumCoverUrl && item.albumCoverUrl) existing.albumCoverUrl = item.albumCoverUrl
-      } else {
-        songMap.set(key, {
-          ...item,
-          platforms: [item.platform],
-          totalMetric: item.metric || 0,
-        })
-      }
-    }
-
-    // Get top songs sorted by a composite score
-    const topSongs = Array.from(songMap.values())
-      .sort((a, b) => {
-        // Prefer songs on more platforms, then by rank
-        if (b.platforms.length !== a.platforms.length) return b.platforms.length - a.platforms.length
-        return a.rank - b.rank
-      })
-      .slice(0, 20)
-
-    // Get unique top artists
-    const seenArtists = new Set<string>()
-    const topArtists: { name: string; imageUrl: string; songCount: number; platforms: Set<string> }[] = []
-    for (const song of topSongs) {
-      if (!seenArtists.has(song.artistName)) {
-        seenArtists.add(song.artistName)
-        const artistSongs = topSongs.filter(s => s.artistName === song.artistName)
-        const allPlatforms = new Set(artistSongs.flatMap(s => s.platforms))
-        topArtists.push({
-          name: song.artistName,
-          imageUrl: song.albumCoverUrl || '',
-          songCount: artistSongs.length,
-          platforms: allPlatforms,
-        })
-      }
-    }
-
-    // Generate articles
     const articles: Article[] = []
-    const now = new Date()
 
-    // ── 3 Chart Analysis articles ────────────────────────
-    if (topSongs.length >= 1) {
-      articles.push(generateChartAnalysisArticle(topSongs[0], crossPlatform, now, 0))
-    }
-    if (topSongs.length >= 2) {
-      articles.push(generateChartAnalysisArticle(topSongs[1], crossPlatform, now, 1))
-    }
-    if (crossPlatform.length >= 1) {
-      articles.push(generateCrossPlatformChartArticle(crossPlatform[0], now, 2))
-    } else if (topSongs.length >= 3) {
-      articles.push(generateChartAnalysisArticle(topSongs[2], crossPlatform, now, 2))
-    }
+    // ── Step 1: Fetch real articles from News APIs ───────────
+    const [newsApiArticles, newsDataArticles] = await Promise.allSettled([
+      fetchNewsAPI(env),
+      fetchNewsDataIO(env),
+    ])
 
-    // ── 3 News articles ─────────────────────────────────
-    if (topArtists.length >= 1) {
-      articles.push(generateNewsArticle(topArtists[0], topSongs, now, 3))
+    if (newsApiArticles.status === 'fulfilled' && newsApiArticles.value.length > 0) {
+      articles.push(...newsApiArticles.value)
+      console.log(`[articles] ${newsApiArticles.value.length} articles from NewsAPI`)
     }
-    if (topArtists.length >= 2) {
-      articles.push(generateNewsArticle(topArtists[1], topSongs, now, 4))
-    }
-    if (topArtists.length >= 3) {
-      articles.push(generateNewsArticle(topArtists[2], topSongs, now, 5))
+    if (newsDataArticles.status === 'fulfilled' && newsDataArticles.value.length > 0) {
+      articles.push(...newsDataArticles.value)
+      console.log(`[articles] ${newsDataArticles.value.length} articles from NewsDataIO`)
     }
 
-    // ── 2 Feature articles ──────────────────────────────
-    articles.push(generateFeatureArticle(topSongs.slice(0, 5), topArtists.slice(0, 3), crossPlatform, now, 6))
-    if (crossPlatform.length >= 3) {
-      articles.push(generateCrossPlatformFeatureArticle(crossPlatform.slice(0, 5), now, 7))
-    } else {
-      articles.push(generateFeatureArticle(topSongs.slice(5, 10), topArtists.slice(3, 6), crossPlatform, now, 7))
+    // ── Step 2: Enrich missing images with Pixabay ────────────
+    if (env.PIXABAY_API_KEY) {
+      await enrichWithPixabay(env, articles)
     }
 
-    // ── 2 Review articles ───────────────────────────────
-    if (topSongs.length >= 4) {
-      articles.push(generateReviewArticle(topSongs[3], now, 8))
-    }
-    if (topSongs.length >= 5) {
-      articles.push(generateReviewArticle(topSongs[4], now, 9))
+    // ── Step 3: Supplement with chart-based articles if needed ─
+    if (articles.length < 10) {
+      const syntheticArticles = await generateSyntheticArticles(env, articles.length)
+      articles.push(...syntheticArticles)
     }
 
-    // Fill any missing articles with fallbacks
-    while (articles.length < 10) {
-      const idx = articles.length
-      const song = topSongs[idx % topSongs.length]
-      articles.push(generateFallbackArticle(song, now, idx))
-    }
+    // Sort by publishedAt descending
+    articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+
+    // Deduplicate by slug
+    const seenSlugs = new Set<string>()
+    const uniqueArticles = articles.filter(a => {
+      if (seenSlugs.has(a.slug)) return false
+      seenSlugs.add(a.slug)
+      return true
+    })
 
     // Store in KV
-    await writeKV(env, 'articles:latest', articles.slice(0, 10))
-    console.log(`[articles] ${articles.length} articles generated and written`)
+    await writeKV(env, 'articles:latest', uniqueArticles.slice(0, 20))
+    console.log(`[articles] ${uniqueArticles.length} articles written (${articles.filter(a => a.source !== 'MusicPulse Editorial' && !SOURCES.includes(a.source)).length} real, ${articles.filter(a => a.source === 'MusicPulse Editorial' || SOURCES.includes(a.source)).length} synthetic)`)
 
   } catch (err) {
     console.error('[articles] error:', err)
   }
+}
+
+// ── NewsAPI.org Fetcher ────────────────────────────────────────
+
+async function fetchNewsAPI(env: Env): Promise<Article[]> {
+  if (!env.NEWSAPI_KEY) return []
+
+  const articles: Article[] = []
+
+  // NewsAPI free plan: everything endpoint, limited to 100 req/day
+  const queries = [
+    { q: 'music chart OR album release OR concert tour', category: 'news' as const },
+    { q: 'Billboard Hot 100 OR Spotify charts OR Apple Music', category: 'chart-analysis' as const },
+  ]
+
+  for (const { q, category } of queries) {
+    try {
+      const url = `https://newsapi.org/v2/everything?${new URLSearchParams({
+        q,
+        language: 'en',
+        sortBy: 'publishedAt',
+        pageSize: '10',
+        page: '1',
+        apiKey: env.NEWSAPI_KEY,
+      })}`
+
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'MusicPulse/1.0' },
+      })
+
+      if (!res.ok) {
+        console.warn(`[articles] NewsAPI HTTP ${res.status}: ${await res.text().catch(() => '')}`)
+        continue
+      }
+
+      const data = await res.json() as {
+        status: string
+        totalResults: number
+        articles: Array<{
+          source: { id: string | null; name: string }
+          author: string | null
+          title: string
+          description: string | null
+          url: string
+          urlToImage: string | null
+          publishedAt: string
+          content: string | null
+        }>
+      }
+
+      if (data.status !== 'ok' || !data.articles) continue
+
+      for (let i = 0; i < data.articles.length && articles.length < 10; i++) {
+        const item = data.articles[i]
+        if (!item.title || item.title === '[Removed]') continue
+
+        const slug = slugify(item.title)
+
+        articles.push({
+          id: `article-newsapi-${articles.length}`,
+          title: item.title,
+          summary: item.description || item.title,
+          content: item.content
+            ? item.content.replace(/\[\+\d+ chars\]/, '').trim()
+            : (item.description || item.title),
+          imageUrl: item.urlToImage || '',
+          author: item.author || 'Staff Reporter',
+          publishedAt: item.publishedAt,
+          source: item.source?.name || 'NewsAPI',
+          sourceUrl: item.url,
+          category,
+          relatedArtists: extractArtists(item.title + ' ' + (item.description || '')),
+          relatedSongs: [],
+          slug,
+        })
+      }
+
+      // Rate limit: wait between queries
+      await new Promise(r => setTimeout(r, 300))
+
+    } catch (err) {
+      console.error('[articles] NewsAPI error:', err)
+    }
+  }
+
+  return articles
+}
+
+// ── NewsDataIO Fetcher ─────────────────────────────────────────
+
+async function fetchNewsDataIO(env: Env): Promise<Article[]> {
+  if (!env.NEWSDATAIO_KEY) return []
+
+  const articles: Article[] = []
+
+  try {
+    const url = `https://newsdata.io/api/1/news?${new URLSearchParams({
+      q: 'music OR album OR concert OR charts OR Billboard',
+      language: 'en',
+      category: 'entertainment',
+      size: '10',
+      apikey: env.NEWSDATAIO_KEY,
+    })}`
+
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'MusicPulse/1.0' },
+    })
+
+    if (!res.ok) {
+      console.warn(`[articles] NewsDataIO HTTP ${res.status}`)
+      return articles
+    }
+
+    const data = await res.json() as {
+      status: string
+      results: Array<{
+        article_id: string
+        title: string
+        description: string | null
+        link: string
+        image_url: string | null
+        pubDate: string
+        source_id: string
+        creator: string[] | null
+        content: string | null
+        keywords: string[] | null
+      }>
+    }
+
+    if (data.status !== 'success' || !data.results) return articles
+
+    for (let i = 0; i < data.results.length && articles.length < 10; i++) {
+      const item = data.results[i]
+      if (!item.title) continue
+
+      const slug = slugify(item.title)
+      const category = inferCategory(item.title + ' ' + (item.description || '') + ' ' + (item.keywords?.join(' ') || ''))
+
+      articles.push({
+        id: `article-newsdata-${i}`,
+        title: item.title,
+        summary: item.description || item.title,
+        content: item.content
+          ? item.content.replace(/\[\+\d+ chars\]/, '').trim().substring(0, 2000)
+          : (item.description || item.title),
+        imageUrl: item.image_url || '',
+        author: item.creator?.[0] || 'Staff Reporter',
+        publishedAt: item.pubDate,
+        source: item.source_id || 'NewsDataIO',
+        sourceUrl: item.link,
+        category,
+        relatedArtists: extractArtists(item.title + ' ' + (item.description || '')),
+        relatedSongs: [],
+        slug,
+      })
+    }
+
+  } catch (err) {
+    console.error('[articles] NewsDataIO error:', err)
+  }
+
+  return articles
+}
+
+// ── Pixabay Image Enrichment ──────────────────────────────────
+
+async function enrichWithPixabay(env: Env, articles: Article[]): Promise<void> {
+  const missingImage = articles.filter(a => !a.imageUrl)
+
+  for (const article of missingImage.slice(0, 5)) { // Limit to 5 Pixabay calls per scrape
+    try {
+      // Extract key terms for image search
+      const searchTerms = extractImageSearchTerms(article.title)
+      if (!searchTerms) continue
+
+      // Check cache first
+      if (pixabayCache.has(searchTerms)) {
+        article.imageUrl = pixabayCache.get(searchTerms)!
+        continue
+      }
+
+      const url = `https://pixabay.com/api/?${new URLSearchParams({
+        key: env.PIXABAY_API_KEY!,
+        q: searchTerms,
+        image_type: 'photo',
+        category: 'music',
+        per_page: '3',
+        safesearch: 'true',
+        min_width: '800',
+      })}`
+
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'MusicPulse/1.0' },
+      })
+
+      if (!res.ok) continue
+
+      const data = await res.json() as {
+        hits: Array<{
+          webformatURL: string
+          largeImageURL: string
+          previewURL: string
+        }>
+      }
+
+      if (data.hits?.[0]?.webformatURL) {
+        const imageUrl = data.hits[0].webformatURL.replace('_640', '_1280')
+        article.imageUrl = imageUrl
+        pixabayCache.set(searchTerms, imageUrl)
+      }
+
+      // Rate limit
+      await new Promise(r => setTimeout(r, 200))
+
+    } catch (err) {
+      // Silently fail — images are nice-to-have
+    }
+  }
+}
+
+// ── Synthetic Article Generator (fallback) ─────────────────────
+
+async function generateSyntheticArticles(env: Env, existingCount: number): Promise<Article[]> {
+  const articles: Article[] = []
+
+  // Collect trending items from all platforms
+  const platforms = ['tiktok', 'twitter', 'youtube', 'spotify', 'apple', 'deezer', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
+  const allTrending: TrendingItem[] = []
+
+  for (const platform of platforms) {
+    const data = await readKV<TrendingItem>(env, `trending:${platform}`)
+    if (data?.items) {
+      allTrending.push(...data.items)
+    }
+  }
+
+  // Also read cross-platform data
+  const crossPlatformData = await readKV<CrossPlatformEntry>(env, 'cross-platform')
+  const crossPlatform = crossPlatformData?.items ?? []
+
+  if (allTrending.length === 0 && crossPlatform.length === 0) {
+    console.log('[articles] No trending data available — skipping synthetic generation')
+    return articles
+  }
+
+  // Deduplicate and rank songs
+  const songMap = new Map<string, TrendingItem & { platforms: string[]; totalMetric: number }>()
+  for (const item of allTrending) {
+    const key = `${item.songTitle.toLowerCase().replace(/[^a-z0-9]/g, '')}::${item.artistName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+    const existing = songMap.get(key)
+    if (existing) {
+      existing.platforms = [...new Set([...existing.platforms, item.platform])]
+      existing.totalMetric += item.metric || 0
+      if (item.rank < existing.rank) existing.rank = item.rank
+      if (!existing.albumCoverUrl && item.albumCoverUrl) existing.albumCoverUrl = item.albumCoverUrl
+    } else {
+      songMap.set(key, { ...item, platforms: [item.platform], totalMetric: item.metric || 0 })
+    }
+  }
+
+  const topSongs = Array.from(songMap.values())
+    .sort((a, b) => b.platforms.length - a.platforms.length || a.rank - b.rank)
+    .slice(0, 20)
+
+  const seenArtists = new Set<string>()
+  const topArtists: { name: string; imageUrl: string; songCount: number; platforms: Set<string> }[] = []
+  for (const song of topSongs) {
+    if (!seenArtists.has(song.artistName)) {
+      seenArtists.add(song.artistName)
+      const artistSongs = topSongs.filter(s => s.artistName === song.artistName)
+      const allPlatforms = new Set(artistSongs.flatMap(s => s.platforms))
+      topArtists.push({
+        name: song.artistName,
+        imageUrl: song.albumCoverUrl || '',
+        songCount: artistSongs.length,
+        platforms: allPlatforms,
+      })
+    }
+  }
+
+  const now = new Date()
+  const needed = Math.max(0, 10 - existingCount)
+
+  // Chart Analysis
+  if (needed > 0 && topSongs.length >= 1) {
+    articles.push(generateChartAnalysisArticle(topSongs[0], crossPlatform, now, 0))
+  }
+  if (needed > 1 && topSongs.length >= 2) {
+    articles.push(generateChartAnalysisArticle(topSongs[1], crossPlatform, now, 1))
+  }
+  if (needed > 2 && crossPlatform.length >= 1) {
+    articles.push(generateCrossPlatformChartArticle(crossPlatform[0], now, 2))
+  } else if (needed > 2 && topSongs.length >= 3) {
+    articles.push(generateChartAnalysisArticle(topSongs[2], crossPlatform, now, 2))
+  }
+
+  // News
+  if (needed > 3 && topArtists.length >= 1) {
+    articles.push(generateNewsArticle(topArtists[0], topSongs, now, 3))
+  }
+  if (needed > 4 && topArtists.length >= 2) {
+    articles.push(generateNewsArticle(topArtists[1], topSongs, now, 4))
+  }
+
+  // Feature
+  if (needed > 5) {
+    articles.push(generateFeatureArticle(topSongs.slice(0, 5), topArtists.slice(0, 3), crossPlatform, now, 5))
+  }
+
+  // Review
+  if (needed > 6 && topSongs.length >= 4) {
+    articles.push(generateReviewArticle(topSongs[3], now, 6))
+  }
+  if (needed > 7 && topSongs.length >= 5) {
+    articles.push(generateReviewArticle(topSongs[4], now, 7))
+  }
+
+  // Fill remaining
+  while (articles.length < needed) {
+    const idx = articles.length + existingCount
+    const song = topSongs[idx % topSongs.length]
+    articles.push(generateFallbackArticle(song, now, idx))
+  }
+
+  return articles
 }
 
 // ── Article generators ────────────────────────────────────────
@@ -261,7 +511,6 @@ function generateCrossPlatformChartArticle(
 ): Article {
   const title = `Cross-Platform Power: "${entry.songTitle}" by ${entry.artistName} Scores ${entry.score}/100`
   const slug = slugify(title)
-
   const platformStr = entry.platforms.join(', ')
 
   const content = `In the latest Cross-Platform Power Rankings, "${entry.songTitle}" by ${entry.artistName} has achieved a remarkable score of ${entry.score} out of 100, reflecting its pervasive presence across the global music ecosystem. The track is currently trending on ${entry.platforms.length} platforms: ${platformStr}.\n\nThe Cross-Platform Power Score is calculated by analyzing a song's chart position, viral momentum, and consistency across multiple streaming and social platforms. A score above 80 indicates a cultural moment — a track that has transcended any single audience to become a genuine global phenomenon. ${entry.artistName}'s achievement places this release in elite company.\n\nWhat makes this particularly impressive is the diversity of platforms where the track is gaining traction. From short-form video platforms to traditional streaming services, "${entry.songTitle}" is resonating with listeners across every demographic and listening context, suggesting this is more than a momentary spike — it's a sustained cultural impact.`
@@ -294,7 +543,6 @@ function generateNewsArticle(
   const totalStreams = artistSongs.reduce((sum, s) => sum + s.totalMetric, 0)
   const totalStreamsStr = formatMetric(totalStreams)
   const platformCount = artist.platforms.size
-  const platformStr = Array.from(artist.platforms).join(', ')
 
   const achievements = [
     `Surpasses ${totalStreamsStr} Combined Streams`,
@@ -305,7 +553,7 @@ function generateNewsArticle(
   const title = `${artist.name} ${achievements[index % achievements.length]}`
   const slug = slugify(title)
 
-  const content = `${artist.name} continues to shatter expectations, surpassing ${totalStreamsStr} in combined streams across all major platforms. With ${artist.songCount} track${artist.songCount > 1 ? 's' : ''} currently charting on ${platformStr}, the artist has cemented their status as one of the most dominant forces in modern music.\n\n${topSong ? `Leading the charge is "${topSong.songTitle}," which alone has accumulated ${formatMetric(topSong.totalMetric)} streams and sits at #${topSong.rank} on global charts. ` : ''}The milestone represents a significant achievement in an increasingly competitive landscape, where only a handful of artists manage to maintain sustained chart presence across multiple platforms simultaneously.\n\nIndustry observers note that ${artist.name}'s ability to consistently produce chart-topping content while maintaining cross-platform relevance speaks to both artistic versatility and strategic savvy. With these numbers, the artist joins an exclusive group of performers who have achieved this level of simultaneous multi-platform dominance in 2026.`
+  const content = `${artist.name} continues to shatter expectations, surpassing ${totalStreamsStr} in combined streams across all major platforms. With ${artist.songCount} track${artist.songCount > 1 ? 's' : ''} currently charting, the artist has cemented their status as one of the most dominant forces in modern music.\n\n${topSong ? `Leading the charge is "${topSong.songTitle}," which alone has accumulated ${formatMetric(topSong.totalMetric)} streams and sits at #${topSong.rank} on global charts. ` : ''}The milestone represents a significant achievement in an increasingly competitive landscape, where only a handful of artists manage to maintain sustained chart presence across multiple platforms simultaneously.\n\nIndustry observers note that ${artist.name}'s ability to consistently produce chart-topping content while maintaining cross-platform relevance speaks to both artistic versatility and strategic savvy. With these numbers, the artist joins an exclusive group of performers who have achieved this level of simultaneous multi-platform dominance in 2026.`
 
   return {
     id: `article-news-${index}`,
@@ -358,43 +606,6 @@ function generateFeatureArticle(
     category: 'feature',
     relatedArtists: artistNames,
     relatedSongs: songs.map(s => s.songTitle).slice(0, 5),
-    slug,
-  }
-}
-
-function generateCrossPlatformFeatureArticle(
-  entries: CrossPlatformEntry[],
-  now: Date,
-  index: number,
-): Article {
-  const topEntry = entries[0]
-  const artistNames = [...new Set(entries.slice(0, 5).map(e => e.artistName))]
-  const artistStr = artistNames.length > 2
-    ? `${artistNames.slice(0, -1).join(', ')} and ${artistNames[artistNames.length - 1]}`
-    : artistNames.join(' and ')
-
-  const title = `Borderless Beats: The Cross-Platform Phenomena Uniting Global Listeners`
-  const slug = slugify(title)
-
-  const entryList = entries.slice(0, 3).map(e =>
-    `"${e.songTitle}" by ${e.artistName} (score: ${e.score}/100, ${e.platforms.length} platforms)`
-  ).join('; ')
-
-  const content = `In an era where music transcends borders faster than ever, a new breed of hit is emerging: the cross-platform phenomenon. These are tracks that don't just top one chart — they dominate everywhere simultaneously, creating a unified global soundtrack that resonates from Seoul to São Paulo.\n\nLeading the charge are tracks like ${entryList}. Each of these songs has achieved what was once considered nearly impossible: simultaneous viral success on short-form video platforms, sustained streaming numbers on demand platforms, and chart presence on traditional radio and sales-based rankings.\n\n${topEntry ? `"${topEntry.songTitle}" by ${topEntry.artistName} stands out with a cross-platform score of ${topEntry.score}/100, reflecting its presence on ${topEntry.platforms.length} distinct platforms. ` : ''}What unites these tracks isn't a single genre or language — it's their ability to create moments that listeners across cultures want to participate in and share. In 2026, the measure of a hit isn't just streams; it's ubiquity.`
-
-  return {
-    id: `article-feature-${index}`,
-    title,
-    summary: `How tracks by ${artistStr} are breaking platform boundaries and creating a unified global soundtrack.`,
-    content,
-    imageUrl: topEntry?.albumCoverUrl || '',
-    author: AUTHORS[index % AUTHORS.length],
-    publishedAt: new Date(now.getTime() - index * 3600000).toISOString(),
-    source: SOURCES[index % SOURCES.length],
-    sourceUrl: `https://musicpulse.app/articles/${slug}`,
-    category: 'feature',
-    relatedArtists: artistNames,
-    relatedSongs: entries.slice(0, 5).map(e => e.songTitle),
     slug,
   }
 }
@@ -468,4 +679,60 @@ function formatMetric(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} million`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return n.toString()
+}
+
+/**
+ * Extract artist names from article text using simple heuristics.
+ * Looks for common patterns like "Artist's", "by Artist", "Artist and Artist".
+ */
+function extractArtists(text: string): string[] {
+  const artists: string[] = []
+  const patterns = [
+    /([A-Z][a-z]+(?: [A-Z][a-z]+)*)'s (?:new |latest |hit )?(?:album|single|track|song|release|EP)/g,
+    /by ([A-Z][a-z]+(?: [A-Z][a-z]+)*)/g,
+    /([A-Z][a-z]+(?: [A-Z][a-z]+)*) (?:and|&) ([A-Z][a-z]+(?: [A-Z][a-z]+)*) (?:announce|release|drop|tour)/g,
+  ]
+
+  for (const pattern of patterns) {
+    let match
+    while ((match = pattern.exec(text)) !== null) {
+      for (let i = 1; i < match.length; i++) {
+        const name = match[i]?.trim()
+        if (name && name.length > 2 && name.length < 40 && !['The', 'New', 'Billboard', 'Spotify', 'Apple', 'Music'].includes(name)) {
+          if (!artists.includes(name)) artists.push(name)
+        }
+      }
+    }
+  }
+
+  return artists.slice(0, 3)
+}
+
+/**
+ * Infer article category from title and keywords.
+ */
+function inferCategory(text: string): Article['category'] {
+  const lower = text.toLowerCase()
+  if (/chart|billboard|hot 100|top \d+|ranking|spotify chart|apple music chart/.test(lower)) return 'chart-analysis'
+  if (/review|rating|album review|track review|verdict/.test(lower)) return 'review'
+  if (/interview|q&a|exclusive|speak|talk/.test(lower)) return 'interview'
+  if (/feature|deep dive|exploring|behind|story of/.test(lower)) return 'feature'
+  return 'news'
+}
+
+/**
+ * Extract relevant search terms from an article title for Pixabay.
+ */
+function extractImageSearchTerms(title: string): string {
+  // Remove common filler words and extract key nouns
+  const cleaned = title
+    .replace(/\b(the|a|an|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|shall|should|may|might|must|can|could|of|in|to|for|with|on|at|by|from|as|into|through|during|before|after|above|below|between|out|off|over|under|again|further|then|once|here|there|when|where|why|how|all|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|just|about|up)\b/gi, '')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // Take the first 3-4 significant words
+  const words = cleaned.split(' ').filter(w => w.length > 2).slice(0, 4)
+  if (words.length === 0) return ''
+  return words.join(' ') + ' music'
 }

@@ -221,6 +221,9 @@ export interface ConcertEvent {
   ticketUrl?: string
   description: string
   slug: string
+  lat?: number
+  lng?: number
+  distanceKm?: number
 }
 
 // ─── META / SEO ────────────────────────────────────────────────

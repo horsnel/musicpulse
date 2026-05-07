@@ -153,6 +153,41 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
       return readKV(env, 'events:upcoming', limit)
     }
 
+    // ── Events Near You ──────────────────────────────────────
+    case 'events/near': {
+      const lat = parseFloat(url.searchParams.get('lat') ?? '0')
+      const lng = parseFloat(url.searchParams.get('lng') ?? '0')
+      const radius = parseInt(url.searchParams.get('radius') ?? '500') // km
+      const limit = parseInt(url.searchParams.get('limit') ?? '10')
+
+      if (!lat && !lng) return null
+
+      const data = await readKV(env, 'events:upcoming')
+      if (!data) return null
+
+      const events = (data.payload as any[])
+        .filter((e: any) => {
+          if (!e.lat || !e.lng) return false
+          const dist = haversineKm(lat, lng, e.lat, e.lng)
+          return dist <= radius
+        })
+        .map((e: any) => {
+          const dist = haversineKm(lat, lng, e.lat, e.lng)
+          return { ...e, distanceKm: Math.round(dist) }
+        })
+        .sort((a: any, b: any) => a.distanceKm - b.distanceKm)
+        .slice(0, limit)
+
+      return { payload: events, updatedAt: data.updatedAt }
+    }
+
+    // ── Pixabay Image Search ─────────────────────────────────
+    case 'images/pixabay': {
+      const query = url.searchParams.get('q') ?? 'music'
+      const perPage = parseInt(url.searchParams.get('per_page') ?? '5')
+      return fetchPixabayImages(env, query, perPage)
+    }
+
     // ── Countries ────────────────────────────────────────────
     case 'charts/countries': {
       return readKV(env, 'countries')
@@ -374,5 +409,80 @@ async function readKV(
   return {
     payload: limit ? data.items.slice(0, limit) : data.items,
     updatedAt: data.updatedAt,
+  }
+}
+
+/**
+ * Haversine distance between two lat/lng points in kilometers.
+ */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371 // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+/**
+ * Fetch images from Pixabay API for a given query.
+ * Returns an array of image URLs with metadata.
+ */
+async function fetchPixabayImages(
+  env: Env,
+  query: string,
+  perPage: number,
+): Promise<{ payload: any; updatedAt: string } | null> {
+  if (!env.PIXABAY_API_KEY) {
+    return { payload: [], updatedAt: new Date().toISOString() }
+  }
+
+  try {
+    const url = `https://pixabay.com/api/?${new URLSearchParams({
+      key: env.PIXABAY_API_KEY,
+      q: query,
+      image_type: 'photo',
+      category: 'music',
+      per_page: String(Math.min(perPage, 10)),
+      safesearch: 'true',
+      min_width: '800',
+    })}`
+
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'MusicPulse/1.0' },
+    })
+
+    if (!res.ok) {
+      return { payload: [], updatedAt: new Date().toISOString() }
+    }
+
+    const data = await res.json() as {
+      hits: Array<{
+        id: number
+        webformatURL: string
+        largeImageURL: string
+        previewURL: string
+        tags: string
+        imageWidth: number
+        imageHeight: number
+        user: string
+      }>
+    }
+
+    const images = (data.hits || []).map(hit => ({
+      id: hit.id,
+      url: hit.webformatURL.replace('_640', '_1280'),
+      previewUrl: hit.previewURL,
+      tags: hit.tags,
+      width: hit.imageWidth,
+      height: hit.imageHeight,
+      photographer: hit.user,
+      attribution: `Photo by ${hit.user} via Pixabay`,
+    }))
+
+    return { payload: images, updatedAt: new Date().toISOString() }
+  } catch {
+    return { payload: [], updatedAt: new Date().toISOString() }
   }
 }

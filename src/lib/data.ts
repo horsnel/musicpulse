@@ -209,3 +209,10 @@ export async function getEvents(limit = 20): Promise<ConcertEvent[]> {
     [],
   )
 }
+
+export async function getEventsNear(lat: number, lng: number, radius = 500, limit = 10): Promise<ConcertEvent[]> {
+  return apiFetch<ConcertEvent[]>(
+    `/api/events/near?lat=${lat}&lng=${lng}&radius=${radius}&limit=${limit}`,
+    [],
+  )
+}

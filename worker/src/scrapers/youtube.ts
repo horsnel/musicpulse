@@ -5,7 +5,11 @@
  * Requires YOUTUBE_API_KEY — uses Apple Music data as fallback if not set.
  *
  * Free tier: 10,000 quota units/day
- * One trending fetch = ~1-3 units
+ * Chart fetch = ~1-3 units, playlist fetch = ~1-3 units
+ *
+ * Now fetches both:
+ *  1. Trending music videos (chart=mostPopular, videoCategoryId=10)
+ *  2. YouTube Music top hits playlist for additional coverage
  */
 
 import { Env } from '../index'
@@ -25,30 +29,109 @@ export async function scrapeYouTube(env: Env): Promise<void> {
 
 async function scrapeYouTubeAPI(env: Env): Promise<void> {
   try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=50&key=${env.YOUTUBE_API_KEY}`
+    // ── Fetch 1: Trending Music Videos ──────────────────────
+    const trendingUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=50&key=${env.YOUTUBE_API_KEY}`
 
-    const res = await fetch(url)
-    if (!res.ok) {
-      console.warn(`[youtube] HTTP ${res.status}`)
+    const trendingRes = await fetch(trendingUrl)
+    if (!trendingRes.ok) {
+      console.warn(`[youtube] Trending HTTP ${trendingRes.status}`)
+      // Fall back to Apple Music data
+      await generateFromAppleMusic(env)
       return
     }
 
-    const data = await res.json() as YouTubeResponse
-    const items = data.items ?? []
+    const trendingData = await trendingRes.json() as YouTubeResponse
+    const trendingItems = trendingData.items ?? []
 
-    const chartEntries = items.map((item, i) => ({
+    // ── Fetch 2: YouTube Music Top Hits Playlist ────────────
+    // PL4fGSI1pDJn6O1LS0XSdF3RyOxRUKtq2S = YouTube Music Top 100
+    let playlistItems: YouTubePlaylistItem[] = []
+    try {
+      const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=PL4fGSI1pDJn6O1LS0XSdF3RyOxRUKtq2S&maxResults=50&key=${env.YOUTUBE_API_KEY}`
+      const playlistRes = await fetch(playlistUrl)
+      if (playlistRes.ok) {
+        const playlistData = await playlistRes.json() as YouTubePlaylistResponse
+        playlistItems = playlistData.items ?? []
+        console.log(`[youtube] ${playlistItems.length} playlist items fetched`)
+      }
+    } catch (err) {
+      console.warn('[youtube] Playlist fetch failed, using trending only:', err)
+    }
+
+    // ── Merge and deduplicate ───────────────────────────────
+    const seenIds = new Set<string>()
+    const allItems: YouTubeVideoItem[] = []
+
+    // Add trending items first (higher priority)
+    for (const item of trendingItems) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id)
+        allItems.push({
+          id: item.id,
+          title: item.snippet.title,
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+          thumbnails: item.snippet.thumbnails,
+          viewCount: item.statistics?.viewCount || '0',
+          likeCount: item.statistics?.likeCount || '0',
+          commentCount: item.statistics?.commentCount || '0',
+          duration: item.contentDetails?.duration || '',
+        })
+      }
+    }
+
+    // Fetch video details for playlist items
+    if (playlistItems.length > 0) {
+      const playlistVideoIds = playlistItems
+        .map(pi => pi.contentDetails?.videoId)
+        .filter((id): id is string => !!id && !seenIds.has(id))
+        .slice(0, 50) // Max 50 per details request
+
+      if (playlistVideoIds.length > 0) {
+        try {
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${playlistVideoIds.join(',')}&key=${env.YOUTUBE_API_KEY}`
+          const detailsRes = await fetch(detailsUrl)
+          if (detailsRes.ok) {
+            const detailsData = await detailsRes.json() as YouTubeResponse
+            for (const item of detailsData.items ?? []) {
+              if (!seenIds.has(item.id)) {
+                seenIds.add(item.id)
+                allItems.push({
+                  id: item.id,
+                  title: item.snippet.title,
+                  channelTitle: item.snippet.channelTitle,
+                  publishedAt: item.snippet.publishedAt,
+                  thumbnails: item.snippet.thumbnails,
+                  viewCount: item.statistics?.viewCount || '0',
+                  likeCount: item.statistics?.likeCount || '0',
+                  commentCount: item.statistics?.commentCount || '0',
+                  duration: item.contentDetails?.duration || '',
+                })
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[youtube] Playlist video details fetch failed:', err)
+        }
+      }
+    }
+
+    console.log(`[youtube] ${allItems.length} total unique videos (trending: ${trendingItems.length}, playlist: ${seenIds.size - trendingItems.length})`)
+
+    // ── Generate chart entries ──────────────────────────────
+    const chartEntries = allItems.map((item, i) => ({
       id: `youtube-chart-global-${i}`,
       songId: item.id,
       song: {
         id: item.id,
-        slug: slugify(item.snippet.title + '-' + item.snippet.channelTitle),
-        title: cleanYouTubeTitle(item.snippet.title),
-        artistId: slugify(item.snippet.channelTitle),
-        artistName: item.snippet.channelTitle,
-        artistSlug: slugify(item.snippet.channelTitle),
-        albumCoverUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url,
-        durationMs: parseDuration(item.contentDetails?.duration || ''),
-        releaseDate: item.snippet.publishedAt?.split('T')[0] || '',
+        slug: slugify(item.title + '-' + item.channelTitle),
+        title: cleanYouTubeTitle(item.title),
+        artistId: slugify(item.channelTitle),
+        artistName: item.channelTitle,
+        artistSlug: slugify(item.channelTitle),
+        albumCoverUrl: item.thumbnails?.high?.url || item.thumbnails?.medium?.url,
+        durationMs: parseDuration(item.duration),
+        releaseDate: item.publishedAt?.split('T')[0] || '',
         genres: [],
         popularityScore: Math.max(0, 100 - i),
         youtubeUrl: `https://youtube.com/watch?v=${item.id}`,
@@ -59,7 +142,7 @@ async function scrapeYouTubeAPI(env: Env): Promise<void> {
       positionChange: 0,
       isNewEntry: false,
       isReEntry: false,
-      streams: parseInt(item.statistics?.viewCount || '0'),
+      streams: parseInt(item.viewCount || '0'),
       peakPosition: i + 1,
       weeksOnChart: 1,
       chartDate: new Date().toISOString().split('T')[0],
@@ -68,31 +151,33 @@ async function scrapeYouTubeAPI(env: Env): Promise<void> {
 
     await writeKV(env, 'charts:youtube:global', chartEntries)
 
-    // Also store as trending items
-    const trendingItems = items.slice(0, 8).map((item, i) => ({
+    // ── Generate trending items (top 10) ────────────────────
+    const trendingOutput = allItems.slice(0, 10).map((item, i) => ({
       id: `youtube-trend-${i}`,
       rank: i + 1,
       rankChange: 0,
       isNew: i === 0,
       platform: 'youtube' as const,
       songId: item.id,
-      songTitle: cleanYouTubeTitle(item.snippet.title),
-      artistName: item.snippet.channelTitle,
+      songTitle: cleanYouTubeTitle(item.title),
+      artistName: item.channelTitle,
       artEmoji: getArtEmoji(),
       artGradient: getArtGradient(i),
-      albumCoverUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url,
-      metric: parseInt(item.statistics?.viewCount || '0'),
+      albumCoverUrl: item.thumbnails?.high?.url || item.thumbnails?.medium?.url,
+      metric: parseInt(item.viewCount || '0'),
       metricUnit: 'views',
-      badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : null) as any,
-      surgePercent: Math.max(10, 100 - i * 10),
+      badge: (i === 0 ? 'hot' : i < 3 ? 'rising' : i < 5 ? 'new' : null) as any,
+      surgePercent: Math.max(10, 100 - i * 9),
       updatedAt: new Date().toISOString(),
     }))
 
-    await writeKV(env, 'trending:youtube', trendingItems)
-    console.log(`[youtube] ${items.length} entries written (real API data)`)
+    await writeKV(env, 'trending:youtube', trendingOutput)
+    console.log(`[youtube] ${chartEntries.length} chart entries + ${trendingOutput.length} trending items written (real API data)`)
 
   } catch (err) {
     console.error('[youtube] API error:', err)
+    // Fallback to Apple Music data on error
+    await generateFromAppleMusic(env)
   }
 }
 
@@ -115,8 +200,6 @@ async function generateFromAppleMusic(env: Env): Promise<void> {
     songId: item.songId,
     songTitle: item.songTitle,
     artistName: item.artistName,
-    // Always include artEmoji and artGradient as fallback even when albumCoverUrl is present.
-    // The frontend shows the image when available, but falls back to emoji+gradient when not.
     artEmoji: getArtEmoji(item.genres?.[0]),
     artGradient: getArtGradient(i),
     albumCoverUrl: item.albumCoverUrl,
@@ -137,9 +220,12 @@ function cleanYouTubeTitle(title: string): string {
   return title
     .replace(/\(Official\s*(Music\s*)?Video\)/gi, '')
     .replace(/\(Official\s*(Audio)?\)/gi, '')
+    .replace(/\(Lyrics?\)/gi, '')
     .replace(/\[Official\s*(Music\s*)?Video\]/gi, '')
     .replace(/\[MV\]/gi, '')
+    .replace(/\[Lyrics?\]/gi, '')
     .replace(/\s*\|\s*YouTube$/i, '')
+    .replace(/\s*feat\.\s*/gi, ' ft. ')
     .trim()
 }
 
@@ -153,6 +239,22 @@ function parseDuration(iso: string): number {
 }
 
 // ── Types ─────────────────────────────────────────────────────
+
+interface YouTubeVideoItem {
+  id: string
+  title: string
+  channelTitle: string
+  publishedAt: string
+  thumbnails?: {
+    medium?: { url: string }
+    high?: { url: string }
+    default?: { url: string }
+  }
+  viewCount: string
+  likeCount: string
+  commentCount: string
+  duration: string
+}
 
 interface YouTubeResponse {
   items: Array<{
@@ -176,4 +278,17 @@ interface YouTubeResponse {
       duration: string
     }
   }>
+}
+
+interface YouTubePlaylistItem {
+  contentDetails?: {
+    videoId: string
+  }
+  snippet?: {
+    title: string
+  }
+}
+
+interface YouTubePlaylistResponse {
+  items: YouTubePlaylistItem[]
 }

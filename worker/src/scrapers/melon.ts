@@ -21,7 +21,7 @@ import { Env } from '../index'
 import { writeKV, readKV } from '../store'
 import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
 
-const APPLE_KR_FEED = 'https://itunes.apple.com/kr/rss/topsongs/limit=50/json'
+const APPLE_KR_FEED = 'https://itunes.apple.com/kr/rss/topsongs/limit=200/json'
 
 interface ITunesRSSEntry {
   'im:name': { label: string }
