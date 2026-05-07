@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { TrendingItem, TrendingPlatform } from '@/types'
-import { cn, formatCount } from '@/lib/utils'
+import { cn, formatCount, slugify } from '@/lib/utils'
 import { Badge, LiveDot } from '@/components/ui'
 import { MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
@@ -60,11 +61,14 @@ function TrendingCard({
 
       {/* Items */}
       <div className="divide-y divide-[var(--border)]">
-        {items.map((item, i) => (
-          <div
+        {items.map((item, i) => {
+          const songSlug = slugify(item.songTitle + '-' + item.artistName)
+          return (
+          <Link
             key={item.id}
+            href={`/songs/${songSlug}`}
             className={cn(
-              'relative flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 transition-colors hover:bg-[var(--bg3)] overflow-hidden animate-fade-up',
+              'relative flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 transition-colors hover:bg-[var(--bg3)] overflow-hidden animate-fade-up no-underline text-inherit',
               `delay-${i + 1}`,
             )}
           >
@@ -133,8 +137,9 @@ function TrendingCard({
                 }}
               />
             )}
-          </div>
-        ))}
+          </Link>
+          )
+        })}
       </div>
     </div>
   )

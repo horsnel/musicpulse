@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { ChartEntry } from '@/types'
-import { cn, formatCount, formatRankChange } from '@/lib/utils'
+import { cn, formatCount, formatRankChange, slugify } from '@/lib/utils'
 import { PlayingBars, Badge } from '@/components/ui'
 
 interface HeroSectionProps {
@@ -32,7 +33,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7 py-10 sm:py-16 relative z-10">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
           {/* #1 Song — Hero Card */}
-          <div className="flex-1 min-w-0">
+          <Link href={`/songs/${slugify(topSong.song.title + '-' + topSong.song.artistName)}`} className="flex-1 min-w-0 no-underline text-inherit">
             <div className="flex items-start gap-5 mb-3 sm:mb-4">
               {/* #1 Song artwork */}
               {topSong.song.albumCoverUrl ? (
@@ -86,7 +87,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                 ))}
               </div>
             )}
-          </div>
+          </Link>
 
           {/* Top 5 List */}
           <div className="w-full lg:w-[380px] flex-shrink-0">
@@ -101,10 +102,11 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
               </div>
               <div className="divide-y divide-[var(--border)]">
                 {spotifyTop5.map((entry, i) => (
-                  <div
+                  <Link
                     key={entry.id}
+                    href={`/songs/${slugify(entry.song.title + '-' + entry.song.artistName)}`}
                     className={cn(
-                      'flex items-center gap-3 sm:gap-3.5 px-4 sm:px-5 py-3 sm:py-3.5 transition-colors hover:bg-[var(--bg3)] animate-fade-up',
+                      'flex items-center gap-3 sm:gap-3.5 px-4 sm:px-5 py-3 sm:py-3.5 transition-colors hover:bg-[var(--bg3)] animate-fade-up no-underline text-inherit',
                       `delay-${i + 1}`,
                     )}
                   >
@@ -160,7 +162,7 @@ export function HeroSection({ spotifyTop5 }: HeroSectionProps) {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

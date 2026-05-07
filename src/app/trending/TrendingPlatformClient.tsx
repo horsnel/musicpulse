@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { TrendingItem } from '@/types'
-import { formatCount, cn } from '@/lib/utils'
+import { formatCount, cn, slugify } from '@/lib/utils'
 
 interface Props {
   platform: string
@@ -68,7 +69,7 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
           {/* Desktop rows */}
           <div className="hidden sm:block">
             {items.map(item => (
-              <div key={item.id} className="grid items-center px-[22px] h-[62px] border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)]"
+              <Link key={item.id} href={`/songs/${slugify(item.songTitle + '-' + item.artistName)}`} className="grid items-center px-[22px] h-[62px] border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] no-underline text-inherit"
                 style={{ gridTemplateColumns: '50px 48px 1fr 120px 90px' }}>
                 <div className="flex flex-col items-center gap-0.5">
                   <span className={cn('text-[16px] font-black tracking-[-0.03em] leading-none',
@@ -108,14 +109,14 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
                   <div className="text-[14px] font-extrabold tracking-[-0.02em]" style={{ color }}>{formatCount(item.metric)}</div>
                   <div className="text-[10px] font-semibold text-[var(--text3)] mt-0.5">{item.metricUnit}</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
           {/* Mobile rows */}
           <div className="sm:hidden">
             {items.map(item => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)]">
+              <Link key={item.id} href={`/songs/${slugify(item.songTitle + '-' + item.artistName)}`} className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(28,30,46,0.6)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] no-underline text-inherit">
                 <div className="flex flex-col items-center gap-0.5 w-7 flex-shrink-0">
                   <span className={cn('text-[15px] font-black tracking-[-0.03em] leading-none',
                     item.rank === 1 ? 'rank-gold' : item.rank === 2 ? 'rank-silver' : item.rank === 3 ? 'rank-bronze' : item.isNew ? 'text-[#3b82f6]' : 'text-[var(--text3)]')}>
@@ -153,7 +154,7 @@ export function TrendingPlatformPageClient({ platform, label, sub, color, items 
                   <div className="text-[12px] font-extrabold tracking-[-0.02em]" style={{ color }}>{formatCount(item.metric)}</div>
                   <div className="text-[10px] font-semibold text-[var(--text3)] mt-0.5">{item.metricUnit}</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>}

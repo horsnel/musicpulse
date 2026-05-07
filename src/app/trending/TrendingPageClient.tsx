@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type { TrendingItem, CrossPlatformScore, VelocityItem, GenreHeatRow } from '@/types'
-import { formatCount, cn } from '@/lib/utils'
+import { formatCount, cn, slugify } from '@/lib/utils'
 import { PlatformIcon, MiniPlatformIcon, PLATFORM_COLORS } from '@/components/ui/PlatformIcons'
 
 const API_URL = 'https://musicpulse-api.odehebuka48.workers.dev'
@@ -254,7 +254,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
           <div className="flex-1 overflow-hidden pl-3 sm:pl-5">
             <div className="flex items-center gap-4 sm:gap-8 whitespace-nowrap" style={{ animation: 'ticker 30s linear infinite' }}>
               {allItems.map((item, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-[12px] font-semibold text-[var(--text2)] cursor-pointer hover:text-[var(--text)] transition-colors">
+                <Link key={i} href={`/songs/${slugify(item.songTitle + '-' + item.artistName)}`} className="inline-flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-[12px] font-semibold text-[var(--text2)] no-underline hover:text-[var(--text)] transition-colors">
                   <span className="text-[8px] sm:text-[9px] font-black tracking-[0.1em] uppercase px-1 sm:px-1.5 py-0.5 rounded"
                     style={{
                       background: `rgba(${platRgb(item.platform)},0.15)`,
@@ -266,7 +266,7 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   {item.songTitle} — {item.artistName}
                   <span className="text-[var(--border2)]">·</span>
                   {formatCount(item.metric)} {item.metricUnit}
-                </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -417,8 +417,10 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
             </a>
           </div>
           <div className="p-1.5 sm:p-2">
-            {velocity.map(v => (
-              <div key={v.rank} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)]">
+            {velocity.map(v => {
+              const vSlug = slugify(v.songTitle + '-' + v.artistName)
+              return (
+              <Link key={v.rank} href={`/songs/${vSlug}`} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)] no-underline text-inherit">
                 <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text3)] w-[16px] sm:w-[18px] text-center flex-shrink-0">{v.rank}</span>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-[15px] sm:text-[18px] flex-shrink-0 border border-[var(--border)] overflow-hidden" style={{ background: v.albumCoverUrl ? 'var(--bg3)' : (v.artGradient ?? 'var(--bg3)') }}>
                   {v.albumCoverUrl ? (
@@ -438,8 +440,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   style={{ color: v.rank <= 2 ? '#ff6b1a' : v.rank === 3 ? '#f5c842' : '#1DB954' }}>
                   {v.growthPercent === null ? '+∞%' : `+${v.growthPercent}%`}
                 </div>
-              </div>
-            ))}
+              </Link>
+              )
+            })}
           </div>
         </div>
 
@@ -457,8 +460,10 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
             </a>
           </div>
           <div className="p-1.5 sm:p-2">
-            {crossPlatform.map(cp => (
-              <div key={cp.songId} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)]">
+            {crossPlatform.map(cp => {
+              const cpSlug = slugify(cp.songTitle + '-' + cp.artistName)
+              return (
+              <Link key={cp.songId} href={`/songs/${cpSlug}`} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-[10px] cursor-pointer transition-colors hover:bg-[var(--bg3)] no-underline text-inherit">
                 <div className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-[8px] sm:rounded-[9px] flex items-center justify-center text-[16px] sm:text-[20px] flex-shrink-0 border border-[var(--border)] overflow-hidden" style={{ background: cp.albumCoverUrl ? 'var(--bg3)' : (cp.artGradient ?? 'var(--bg3)') }}>
                   {cp.albumCoverUrl ? (
                     <img src={cp.albumCoverUrl} alt={cp.songTitle} className="w-full h-full object-cover" loading="lazy" />
@@ -482,8 +487,9 @@ export function TrendingPageClient({ tiktok: initTiktok, twitter: initTwitter, y
                   <div className="text-[16px] sm:text-[20px] font-bold text-[var(--text)] tracking-[-0.03em]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{cp.score}</div>
                   <div className="text-[8px] sm:text-[9.5px] font-semibold text-[var(--text3)] tracking-[0.06em] uppercase mt-0.5">Power</div>
                 </div>
-              </div>
-            ))}
+              </Link>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -593,8 +599,10 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
       {/* Rows */}
       <div className="rounded-b-[14px] border border-t-0 bg-[var(--bg2)] overflow-hidden"
         style={{ borderColor: `rgba(${rgb},0.15)` }}>
-        {items.map(item => (
-          <div key={item.id} className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-[18px] py-2.5 sm:py-3 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] relative overflow-hidden">
+        {items.map(item => {
+          const songSlug = slugify(item.songTitle + '-' + item.artistName)
+          return (
+          <Link key={item.id} href={`/songs/${songSlug}`} className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-[18px] py-2.5 sm:py-3 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.025)] relative overflow-hidden no-underline text-inherit">
             {/* Rank */}
             <div className="flex flex-col items-center gap-0.5 w-[22px] sm:w-[26px] flex-shrink-0">
               <span className={cn('text-[15px] sm:text-[17px] font-bold leading-none', item.rank === 1 ? 'rank-gold' : item.rank === 2 ? 'rank-silver' : item.rank === 3 ? 'rank-bronze' : item.isNew ? 'text-[#3b82f6]' : 'text-[var(--text3)]')}
@@ -646,8 +654,9 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
             {item.surgePercent && (
               <div className="surge-bar" style={{ background: meta.color, width: `${item.surgePercent}%`, opacity: 0.5 }} />
             )}
-          </div>
-        ))}
+          </Link>
+          )
+        })}
       </div>
     </div>
   )
