@@ -20,11 +20,11 @@ export function ArtistSlugResolver() {
   if (!mounted || slug === null) {
     return (
       <div className="relative z-10">
-        <div className="relative overflow-hidden min-h-[520px]">
+        <div className="relative overflow-hidden" style={{ minHeight: '320px' }}>
           <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg,rgba(200,90,0,0.1) 0%,rgba(255,140,26,0.05) 40%,transparent 100%)' }} />
-          <div className="relative z-10 max-w-[1280px] mx-auto px-7 pt-[60px] pb-[48px] grid gap-[52px] items-end" style={{ gridTemplateColumns: '320px 1fr' }}>
-            <div className="w-[320px] h-[320px] rounded-full bg-[var(--bg3)] animate-pulse" />
-            <div className="flex flex-col gap-4">
+          <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-7 pt-8 sm:pt-[60px] pb-8 sm:pb-[48px] flex flex-col md:grid gap-6 md:gap-[52px] items-center md:items-end" style={{ gridTemplateColumns: '280px 1fr' }}>
+            <div className="w-[140px] h-[140px] sm:w-[220px] sm:h-[220px] md:w-[280px] md:h-[280px] rounded-full bg-[var(--bg3)] animate-pulse" />
+            <div className="flex flex-col gap-4 w-full">
               <div className="h-4 w-40 rounded bg-[var(--bg3)] animate-pulse" />
               <div className="h-20 w-3/4 rounded bg-[var(--bg3)] animate-pulse" />
               <div className="h-6 w-64 rounded bg-[var(--bg3)] animate-pulse" />
