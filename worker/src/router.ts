@@ -181,13 +181,6 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
       return { payload: events, updatedAt: data.updatedAt }
     }
 
-    // ── Pixabay Image Search ─────────────────────────────────
-    case 'images/pixabay': {
-      const query = url.searchParams.get('q') ?? 'music'
-      const perPage = parseInt(url.searchParams.get('per_page') ?? '5')
-      return fetchPixabayImages(env, query, perPage)
-    }
-
     // ── Countries ────────────────────────────────────────────
     case 'charts/countries': {
       return readKV(env, 'countries')
@@ -423,66 +416,4 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-/**
- * Fetch images from Pixabay API for a given query.
- * Returns an array of image URLs with metadata.
- */
-async function fetchPixabayImages(
-  env: Env,
-  query: string,
-  perPage: number,
-): Promise<{ payload: any; updatedAt: string } | null> {
-  if (!env.PIXABAY_API_KEY) {
-    return { payload: [], updatedAt: new Date().toISOString() }
-  }
-
-  try {
-    const url = `https://pixabay.com/api/?${new URLSearchParams({
-      key: env.PIXABAY_API_KEY,
-      q: query,
-      image_type: 'photo',
-      category: 'music',
-      per_page: String(Math.min(perPage, 10)),
-      safesearch: 'true',
-      min_width: '800',
-    })}`
-
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'MusicPulse/1.0' },
-    })
-
-    if (!res.ok) {
-      return { payload: [], updatedAt: new Date().toISOString() }
-    }
-
-    const data = await res.json() as {
-      hits: Array<{
-        id: number
-        webformatURL: string
-        largeImageURL: string
-        previewURL: string
-        tags: string
-        imageWidth: number
-        imageHeight: number
-        user: string
-      }>
-    }
-
-    const images = (data.hits || []).map(hit => ({
-      id: hit.id,
-      url: hit.webformatURL.replace('_640', '_1280'),
-      previewUrl: hit.previewURL,
-      tags: hit.tags,
-      width: hit.imageWidth,
-      height: hit.imageHeight,
-      photographer: hit.user,
-      attribution: `Photo by ${hit.user} via Pixabay`,
-    }))
-
-    return { payload: images, updatedAt: new Date().toISOString() }
-  } catch {
-    return { payload: [], updatedAt: new Date().toISOString() }
-  }
 }
