@@ -7,6 +7,8 @@
  *  - Writes to KV
  *
  * Scrapers that need API keys gracefully skip if the key is missing.
+ * Per-scraper status (fulfilled / rejected / skipped) is captured in
+ * `scrape:meta` so the frontend can surface data freshness issues.
  */
 
 import { Env } from '../index'
@@ -39,60 +41,101 @@ import { computeHeatmap } from '../normalizers/heatmap'
 import { computeAggregatedCharts } from '../normalizers/aggregated-charts'
 import { computeSocialCharts } from '../normalizers/social-charts'
 import { writeKVMeta } from '../store'
+import { ScraperSkippedError } from './errors'
+
+// Re-export for backward compatibility (other modules may import from ./index)
+export { ScraperSkippedError }
+
+interface ScraperDef {
+  name: string
+  fn: (env: Env) => Promise<void>
+}
+
+const ALL_SCRAPERS: ScraperDef[] = [
+  // Charts (every 6 hours)
+  { name: 'spotify-charts', fn: scrapeSpotifyCharts },
+  { name: 'apple-rss',      fn: scrapeAppleRSS },
+  { name: 'deezer',         fn: scrapeDeezer },
+  { name: 'youtube',        fn: scrapeYouTube },
+
+  // Trending (every 2 hours)
+  { name: 'tiktok',         fn: scrapeTikTok },
+  { name: 'reddit',         fn: scrapeReddit },      // Generates twitter trending data
+
+  // New platforms (no key needed)
+  { name: 'bandcamp',       fn: scrapeBandcamp },
+  { name: 'audiomack',      fn: scrapeAudiomack },
+  { name: 'iheartradio',    fn: scrapeIHeartRadio },
+  { name: 'musixmatch',     fn: scrapeMusixmatch },
+  { name: 'soundcloud',     fn: scrapeSoundcloud },
+  { name: 'billboard',      fn: scrapeBillboard },
+
+  // Enrichment (no key needed)
+  { name: 'itunes',         fn: scrapeITunes },
+  { name: 'musicbrainz',    fn: scrapeMusicBrainz },
+
+  // Genre charts
+  { name: 'genre-charts',   fn: scrapeGenreCharts },
+
+  // Regional charts (no key needed)
+  { name: 'melon',          fn: scrapeMelon },
+  { name: 'oricon',         fn: scrapeOricon },
+
+  // Artist/metadata enrichment (key-gated)
+  { name: 'lastfm',         fn: scrapeLastfm },
+  { name: 'theaudiodb',     fn: scrapeTheAudioDB },
+  { name: 'genius',         fn: scrapeGenius },
+  { name: 'setlistfm',      fn: scrapeSetlistFm },
+]
+
+/**
+ * Run a list of scrapers in parallel and return structured per-scraper status.
+ * Rejectures are captured (not thrown) so one bad scraper doesn't kill the run.
+ */
+async function runScrapersWithStatus(
+  env: Env,
+  scrapers: ScraperDef[],
+): Promise<Array<{ name: string; status: 'fulfilled' | 'rejected'; error?: string; skipped?: boolean; skippedReason?: string }>> {
+  const results = await Promise.allSettled(scrapers.map(s => s.fn(env)))
+
+  return results.map((r, i) => {
+    const name = scrapers[i].name
+    if (r.status === 'fulfilled') {
+      return { name, status: 'fulfilled' as const }
+    }
+    // Rejected — was it an intentional skip?
+    const reason = r.reason
+    if (reason instanceof ScraperSkippedError) {
+      return {
+        name,
+        status: 'rejected' as const,
+        skipped: true,
+        skippedReason: reason.reason,
+      }
+    }
+    return {
+      name,
+      status: 'rejected' as const,
+      error: reason?.message || String(reason),
+    }
+  })
+}
 
 export async function scrapeAll(env: Env): Promise<void> {
   console.log('[scrape] Starting full scrape...')
   const start = Date.now()
 
-  const results = await Promise.allSettled([
-    // Charts (every 6 hours)
-    scrapeSpotifyCharts(env),
-    scrapeAppleRSS(env),
-    scrapeDeezer(env),
-    scrapeYouTube(env),
+  const sourceStatus = await runScrapersWithStatus(env, ALL_SCRAPERS)
 
-    // Trending (every 2 hours)
-    scrapeTikTok(env),
-    scrapeReddit(env),      // Generates twitter trending data
-
-    // New platforms (no key needed)
-    scrapeBandcamp(env),
-    scrapeAudiomack(env),
-    scrapeIHeartRadio(env),
-    scrapeMusixmatch(env),
-    scrapeSoundcloud(env),
-    scrapeBillboard(env),
-
-    // Enrichment (no key needed)
-    scrapeITunes(env),
-    scrapeMusicBrainz(env),
-
-    // Genre charts
-    scrapeGenreCharts(env),
-
-    // Regional charts (no key needed)
-    scrapeMelon(env),
-    scrapeOricon(env),
-
-    // Artist/metadata enrichment (key-gated)
-    scrapeLastfm(env),
-    scrapeTheAudioDB(env),
-    scrapeGenius(env),
-    scrapeSetlistFm(env),
-  ])
-
-  // Log results
-  const names = [
-    'spotify-charts', 'apple-rss', 'deezer', 'youtube',
-    'tiktok', 'reddit',
-    'bandcamp', 'audiomack', 'iheartradio', 'musixmatch', 'soundcloud', 'billboard',
-    'itunes', 'musicbrainz',
-    'genre-charts',
-    'melon', 'oricon',
-    'lastfm', 'theaudiodb', 'genius', 'setlistfm',
-  ]
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') console.error(`[scrape] ${names[i]} failed:`, r.reason)
+  // Log failures for Cloudflare Worker logs
+  sourceStatus.forEach(s => {
+    if (s.status === 'rejected') {
+      if (s.skipped) {
+        console.warn(`[scrape] ${s.name} SKIPPED: ${s.skippedReason}`)
+      } else {
+        console.error(`[scrape] ${s.name} FAILED: ${s.error}`)
+      }
+    }
   })
 
   // Compute derived data from the raw scraped data
@@ -110,15 +153,12 @@ export async function scrapeAll(env: Env): Promise<void> {
     scrapeEvents(env),
   ])
 
-  // Update scrape metadata
+  // Update scrape metadata — now includes per-source error/skip info
   const elapsed = Date.now() - start
   await writeKVMeta(env, 'scrape:meta', {
     lastRun: new Date().toISOString(),
     elapsedMs: elapsed,
-    sources: names.map((name, i) => ({
-      name,
-      status: results[i].status,
-    })),
+    sources: sourceStatus,
   })
 
   console.log(`[scrape] Full scrape completed in ${elapsed}ms`)
@@ -126,38 +166,21 @@ export async function scrapeAll(env: Env): Promise<void> {
 
 export async function scrapeCharts(env: Env): Promise<void> {
   console.log('[scrape] Starting chart scrape...')
-  await Promise.allSettled([
-    scrapeSpotifyCharts(env),
-    scrapeAppleRSS(env),
-    scrapeDeezer(env),
-    scrapeYouTube(env),
-    scrapeGenreCharts(env),
-    scrapeMelon(env),
-    scrapeOricon(env),
-  ])
+  const chartScrapers = ALL_SCRAPERS.filter(s =>
+    ['spotify-charts', 'apple-rss', 'deezer', 'youtube', 'genre-charts', 'melon', 'oricon'].includes(s.name)
+  )
+  await runScrapersWithStatus(env, chartScrapers)
   console.log('[scrape] Chart scrape completed')
 }
 
 export async function scrapeTrending(env: Env): Promise<void> {
   console.log('[scrape] Starting trending scrape...')
-  await Promise.allSettled([
-    scrapeTikTok(env),
-    scrapeReddit(env),
-    scrapeITunes(env),
-    scrapeMusicBrainz(env),
-    scrapeLastfm(env),
-    scrapeTheAudioDB(env),
-    scrapeSetlistFm(env),
-    scrapeGenius(env),
-    scrapeBandcamp(env),
-    scrapeAudiomack(env),
-    scrapeIHeartRadio(env),
-    scrapeMusixmatch(env),
-    scrapeSoundcloud(env),
-    scrapeBillboard(env),
-    scrapeMelon(env),
-    scrapeOricon(env),
-  ])
+  const trendingScrapers = ALL_SCRAPERS.filter(s =>
+    ['tiktok', 'reddit', 'itunes', 'musicbrainz', 'lastfm', 'theaudiodb',
+     'setlistfm', 'genius', 'bandcamp', 'audiomack', 'iheartradio',
+     'musixmatch', 'soundcloud', 'billboard', 'melon', 'oricon'].includes(s.name)
+  )
+  await runScrapersWithStatus(env, trendingScrapers)
 
   // Recompute derived data
   await Promise.allSettled([

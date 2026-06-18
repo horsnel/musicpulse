@@ -42,12 +42,39 @@ export function getArtEmoji(genre?: string): string {
   return GENRE_EMOJIS[genre || ''] || '\u{1F3B5}'
 }
 
+/**
+ * Improved slugify.
+ *
+ * Fixes two real bugs in the original:
+ *  1. Non-ASCII characters were silently stripped — "José González" became "jos-gonzlez".
+ *     Now we use Unicode NFD normalization to fold accents: "José González" → "jose-gonzalez".
+ *  2. Parenthetical content like "(feat. Drake)" or "(Remix)" was kept, producing
+ *     different slugs for the same song across sources. Now we strip them.
+ */
 export function slugify(str: string): string {
-  return str.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+  return (str || '')
+    .normalize('NFD')                        // Decompose accents: é -> e + combining mark
+    .replace(/[\u0300-\u036f]/g, '')         // Strip combining marks
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')              // Strip parentheticals (feat. X), (Remix), etc.
+    .replace(/\[[^\]]*\]/g, ' ')             // Strip bracketed content too
+    .replace(/&/g, 'and')                    // & -> and
+    .replace(/[^a-z0-9\s-]/g, ' ')           // Strip remaining non-ASCII
+    .replace(/\s+/g, '-')                    // Spaces -> dashes
+    .replace(/-+/g, '-')                     // Collapse repeated dashes
+    .replace(/^-|-$/g, '')                   // Trim leading/trailing dash
     .trim()
+}
+
+/**
+ * Normalize a slug (or partial slug from a URL) for matching against another slug.
+ * Used by lookupSong / lookupArtist to be tolerant of slug differences across
+ * scrapers and over time.
+ */
+export function normalizeSlugForLookup(slug: string): string {
+  return (slug || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')   // Strip everything except alphanumerics — pure string compare
 }
 
 export function generateSparkline(rank: number): number[] {

@@ -116,6 +116,11 @@ export interface TrendingItem {
   badge: TrendBadge
   surgePercent?: number
   updatedAt: string
+  // Optional — populated when the song is served from the persisted
+  // songs:<slug> store rather than a live trending/charts list.
+  lastSeen?: string          // ISO timestamp of last chart appearance
+  firstSeen?: string         // ISO timestamp of first chart appearance
+  persistedAcross?: string[] // platforms this song has been seen on
 }
 
 export interface CrossPlatformScore {

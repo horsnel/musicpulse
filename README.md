@@ -192,6 +192,44 @@ The sitemap is auto-generated weekly by `sitemap-generator.worker.ts` and submit
 
 ---
 
+## Required Worker Secrets Checklist
+
+The Cloudflare Worker cron runs every 2h (trending) and 6h (charts). Scrapers
+that don't have their required secrets will **skip gracefully** and the
+previous KV data will stay in place — this can mask broken scrapers as
+"stale data" instead of "missing data". Use `/api/scrape/errors` to audit.
+
+Set these via `wrangler secret put <NAME>` from the `worker/` directory:
+
+| Secret | Required by | Notes |
+|---|---|---|
+| `SPOTIFY_CLIENT_ID` | spotify-charts | Without it, Spotify charts/trending freeze. Deezer is used as fallback. |
+| `SPOTIFY_CLIENT_SECRET` | spotify-charts | Pairs with `SPOTIFY_CLIENT_ID`. Create at developer.spotify.com/dashboard. |
+| `YOUTUBE_API_KEY` | youtube | Google Cloud Console → YouTube Data API v3. |
+| `LASTFM_API_KEY` | lastfm | Last.fm API account. |
+| `GENIUS_CLIENT_ID` + `GENIUS_CLIENT_SECRET` | genius | Genius API app. Auto-requests access token via client_credentials. |
+| `THEAUDIODB_API_KEY` | theaudiodb | theaudiodb.com API key. |
+| `SETLISTFM_API_KEY` | setlistfm | Setlist.fm API key. Used for tour/event data. |
+| `MUSIXMATCH_API_KEY` | musixmatch | Musixmatch developer key. |
+| `PIXABAY_API_KEY` | (images/pixabay endpoint) | Optional. Used for blog/artist imagery. |
+| `SCRAPE_SECRET` | (manual scrape trigger) | Optional. If set, `POST /api/scrape` requires `Authorization: Bearer <secret>`. |
+
+### Scrapers that need NO secrets (always run)
+
+`apple-rss`, `deezer`, `tiktok`, `reddit` (→ twitter), `bandcamp`, `audiomack`,
+`iheartradio`, `musixmatch` (partial), `soundcloud`, `billboard`, `itunes`,
+`musicbrainz`, `genre-charts`, `melon`, `oricon`.
+
+### Diagnosing stale data
+
+1. Hit `GET /api/scrape/errors` — returns per-scraper status with `ok` / `skipped` / `failed` counts.
+2. Each trending column on `/trending` shows a freshness badge. If it's orange
+   with a `⚠` symbol, that platform's data is >24h old and the scraper is
+   likely failing.
+3. Check Cloudflare Worker logs in the dashboard for `[scrape] <name> FAILED:` or `SKIPPED:` lines.
+
+---
+
 ## License
 
 MIT
