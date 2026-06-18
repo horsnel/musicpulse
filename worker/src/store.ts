@@ -29,10 +29,17 @@ export async function writeKV<T>(env: Env, key: string, items: T[]): Promise<voi
   // Auto-persist songs whenever a trending:* key is written.
   // This means every trending scraper implicitly populates the songs:<slug>
   // store without each scraper needing to call persistSongs() explicitly.
+  //
+  // KV WRITE BUDGET: Only persist the TOP 5 songs per trending write.
+  // Cloudflare's free KV plan allows 1,000 writes/day; persisting all 8 items
+  // across 15 platforms × 12 cron runs = 1,440 writes/day, which exceeds the
+  // limit. Top 5 × 15 × 12 = 900 writes/day max (realistic ~300-500 with dedup),
+  // leaving headroom for the regular trending/charts writes.
   if (key.startsWith('trending:')) {
     const platform = key.replace('trending:', '')
+    const topItems = (items as any[]).slice(0, 5)
     try {
-      await persistSongs(env, items as any[], platform, updatedAt)
+      await persistSongs(env, topItems, platform, updatedAt)
     } catch (err) {
       // Persistence is best-effort — never let it break a scrape run.
       console.error(`[store] persistSongs failed for ${key}:`, err)
