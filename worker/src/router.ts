@@ -6,7 +6,8 @@
  */
 
 import { Env } from './index'
-import { slugify } from './scrapers/helpers'
+import { slugify, normalizeSlugForLookup } from './scrapers/helpers'
+import { readPersistedSong } from './store'
 
 const CACHE_TTL = 300 // 5 min browser cache
 
@@ -54,6 +55,33 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
     const slug = path.replace('songs/', '')
     if (slug) {
       return lookupSong(env, slug)
+    }
+  }
+
+  // ── Scrape diagnostics (must be before the switch) ────────
+  if (path === 'scrape/errors') {
+    const meta = await readKV(env, 'scrape:meta')
+    if (!meta) return null
+    // Surface per-source errors and skipped reasons
+    const sources = (meta.payload as any)?.sources ?? []
+    const summary = sources.map((s: any) => ({
+      name: s.name,
+      status: s.status,                          // 'fulfilled' | 'rejected'
+      error: s.error || null,                    // error message if rejected
+      skipped: s.skipped || false,               // true if scraper intentionally skipped (e.g. missing API key)
+      skippedReason: s.skippedReason || null,
+    }))
+    return {
+      payload: {
+        lastRun: (meta.payload as any)?.lastRun,
+        elapsedMs: (meta.payload as any)?.elapsedMs,
+        sources: summary,
+        // Quick health overview
+        ok:   summary.filter((s: any) => s.status === 'fulfilled' && !s.skipped).length,
+        skipped: summary.filter((s: any) => s.skipped).length,
+        failed: summary.filter((s: any) => s.status === 'rejected').length,
+      },
+      updatedAt: meta.updatedAt,
     }
   }
 
@@ -237,14 +265,27 @@ async function routeRequest(path: string, url: URL, env: Env): Promise<{ payload
 // ── Song / Artist Lookup ─────────────────────────────────────────
 
 /**
- * Search across all trending AND chart data in KV for a matching song.
- * Uses fuzzy matching: exact slug, partial slug, or song title keywords.
+ * Resolve a song slug to a song payload.
+ *
+ * Resolution order (most-recent → least-recent):
+ *   1. Persisted song at `songs:<slug>` (or normalized match)
+ *      — covers songs that have fallen off the current trending/charts lists
+ *   2. Live trending:* data (exact or normalized slug match)
+ *   3. Live charts:* data (exact or normalized slug match)
+ *   4. Fuzzy keyword match against trending:* data
  */
 async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updatedAt: string } | null> {
   const platforms = ['apple', 'spotify', 'deezer', 'youtube', 'tiktok', 'twitter', 'soundcloud', 'billboard', 'bandcamp', 'audiomack', 'genius', 'musixmatch', 'iheart', 'melon', 'oricon']
 
   // Normalize the incoming slug for matching
-  const slugNorm = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const slugNorm = normalizeSlugForLookup(slug)
+
+  // 0. Try the persisted song store first — this is what makes song detail
+  //    pages survive a song leaving the current trending/charts list.
+  const persisted = await readPersistedSong(env, slug)
+  if (persisted) {
+    return persisted
+  }
 
   // 1. Try exact match on trending data
   for (const platform of platforms) {
@@ -253,8 +294,7 @@ async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updat
 
     const match = (data.payload as any[]).find((item: any) => {
       const itemSlug = slugify(item.songTitle + '-' + item.artistName)
-      const itemSlugNorm = itemSlug.replace(/[^a-z0-9]/g, '')
-      return itemSlugNorm === slugNorm || itemSlug === slug
+      return normalizeSlugForLookup(itemSlug) === slugNorm || itemSlug === slug
     })
 
     if (match) {
@@ -270,8 +310,7 @@ async function lookupSong(env: Env, slug: string): Promise<{ payload: any; updat
 
       const match = (data.payload as any[]).find((item: any) => {
         const songSlug = item.song?.slug || slugify(item.song?.title + '-' + item.song?.artistName)
-        const songSlugNorm = songSlug.replace(/[^a-z0-9]/g, '')
-        return songSlugNorm === slugNorm || songSlug === slug
+        return normalizeSlugForLookup(songSlug) === slugNorm || songSlug === slug
       })
 
       if (match) {

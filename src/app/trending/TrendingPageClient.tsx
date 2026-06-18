@@ -567,6 +567,38 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
   const textColor = platTextColor(platform)
   const route = PLAT_ROUTE[platform]
 
+  // Compute real freshness from the most recent item's `updatedAt`.
+  // Falls back to the hardcoded PLAT_META.updated only if no items have timestamps.
+  const freshnessLabel = (() => {
+    if (!items || items.length === 0) return meta.updated
+    // Pick the freshest updatedAt
+    const ts = items
+      .map(i => i.updatedAt ? new Date(i.updatedAt).getTime() : 0)
+      .filter(t => t > 0)
+      .sort((a, b) => b - a)[0]
+    if (!ts) return meta.updated
+    const minsAgo = Math.round((Date.now() - ts) / 60000)
+    if (minsAgo < 1) return 'just now'
+    if (minsAgo < 60) return `${minsAgo}m ago`
+    const hoursAgo = Math.round(minsAgo / 60)
+    if (hoursAgo < 24) return `${hoursAgo}h ago`
+    const daysAgo = Math.round(hoursAgo / 24)
+    if (daysAgo < 7) return `${daysAgo}d ago`
+    const weeksAgo = Math.round(daysAgo / 7)
+    return `${weeksAgo}w ago`
+  })()
+
+  // Highlight stale data (>24h) so users know it's not actually fresh
+  const isStale = (() => {
+    if (!items || items.length === 0) return false
+    const ts = items
+      .map(i => i.updatedAt ? new Date(i.updatedAt).getTime() : 0)
+      .filter(t => t > 0)
+      .sort((a, b) => b - a)[0]
+    if (!ts) return false
+    return (Date.now() - ts) > 24 * 60 * 60 * 1000
+  })()
+
   return (
     <div className="flex flex-col">
       {/* Column header */}
@@ -588,7 +620,11 @@ function TrendingColumn({ platform, items }: { platform: string; items: Trending
         <div className="flex items-center gap-2">
           <div className="text-right">
             <div className="text-[16px] sm:text-[20px] font-bold" style={{ color: textColor, fontFamily: 'Space Grotesk, sans-serif' }}>Top {items.length}</div>
-            <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--text3)] mt-0.5">{meta.updated}</div>
+            <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] uppercase mt-0.5"
+              style={{ color: isStale ? '#f59e0b' : 'var(--text3)' }}
+              title={isStale ? 'This data is more than 24h old — scraper may be failing. Check /api/scrape/errors.' : undefined}>
+              {isStale ? '⚠ ' : ''}{freshnessLabel}
+            </div>
           </div>
           <Link href={route} className="flex items-center justify-center w-[26px] h-[26px] rounded-lg bg-[var(--bg3)] border border-[var(--border)] text-[var(--text3)] no-underline transition-all hover:border-[var(--border2)] hover:text-[var(--text2)] hover:scale-110 flex-shrink-0">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><polyline points="6.5,2.5 10,6 6.5,9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none"/></svg>

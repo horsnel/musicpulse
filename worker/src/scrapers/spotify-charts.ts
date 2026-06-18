@@ -22,6 +22,7 @@
 import { Env } from '../index'
 import { writeKV } from '../store'
 import { slugify, generateSparkline, getArtGradient, getArtEmoji } from './helpers'
+import { ScraperSkippedError } from './errors'
 
 const PLAYLISTS = [
   { id: 'global', name: 'Global', playlistId: '37i9dQZEVXbMDoHDwVN2tF' },
@@ -41,8 +42,12 @@ export async function scrapeSpotifyCharts(env: Env): Promise<void> {
   console.log('[spotify-charts] Starting...')
 
   if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET) {
-    console.log('[spotify-charts] No Spotify credentials set — skipping (Deezer provides chart data without keys)')
-    return
+    // Throw a recognizable error so the orchestrator can record this as
+    // "skipped" (intentional) rather than "rejected" (failed). This makes
+    // the issue visible in /api/scrape/errors and the freshness UI.
+    throw new ScraperSkippedError(
+      'Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET — set both as Worker secrets to enable Spotify charts (Deezer is used as fallback chart data without keys).',
+    )
   }
 
   try {

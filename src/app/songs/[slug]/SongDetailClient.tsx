@@ -89,13 +89,22 @@ export function SongDetailClient({ slug }: Props) {
             </svg>
           </div>
           <h2 className="text-[18px] sm:text-[20px] font-bold text-[var(--text)] mb-2">Song Not Found</h2>
-          <p className="text-[13px] sm:text-[14px] text-[var(--text3)] mb-6">
-            We couldn&apos;t find data for this song. It may not be in our database yet, or the link may be incorrect.
+          <p className="text-[13px] sm:text-[14px] text-[var(--text3)] mb-2">
+            We couldn&apos;t find data for <span className="text-[var(--text2)] font-semibold">{slug.replace(/-/g, ' ')}</span>.
           </p>
-          <Link href="/trending" className="inline-flex items-center gap-2 text-[14px] font-bold px-6 py-3 rounded-full no-underline"
-            style={{ background: 'var(--green)', color: '#000' }}>
-            ← Back to Trending
-          </Link>
+          <p className="text-[12px] sm:text-[13px] text-[var(--text3)] mb-6">
+            It may have dropped off the current charts, the link may be outdated, or the song may never have been indexed. Try browsing the current trending lists.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Link href="/trending" className="inline-flex items-center justify-center gap-2 text-[14px] font-bold px-6 py-3 rounded-full no-underline"
+              style={{ background: 'var(--green)', color: '#000' }}>
+              ← Browse Trending
+            </Link>
+            <Link href={`/artists/${slug.split('-').slice(-1)[0] || ''}`}
+              className="inline-flex items-center justify-center gap-2 text-[14px] font-bold px-6 py-3 rounded-full no-underline border border-[var(--border2)] text-[var(--text2)] hover:border-[var(--text3)] hover:text-[var(--text)] transition-all">
+              Try Artist Page →
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -189,6 +198,25 @@ export function SongDetailClient({ slug }: Props) {
               <span>Platform: {song.platform}</span>
               <span className="w-[3px] h-[3px] rounded-full bg-[var(--border2)]" />
               <span>Metric: {formatCount(song.metric)} {song.metricUnit}</span>
+              {/* Data freshness badge — surfaces stale data so users know when something is outdated */}
+              {(() => {
+                const lastSeen = song.lastSeen || song.updatedAt
+                if (!lastSeen) return null
+                const hoursAgo = (Date.now() - new Date(lastSeen).getTime()) / 36e5
+                if (hoursAgo < 24) return null  // fresh — don't show anything
+                const daysAgo = Math.floor(hoursAgo / 24)
+                const label = daysAgo >= 30 ? `${Math.floor(daysAgo / 30)}mo old` : `${daysAgo}d old`
+                return (
+                  <>
+                    <span className="w-[3px] h-[3px] rounded-full bg-[var(--border2)]" />
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-[0.08em] uppercase"
+                      style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}
+                      title={`Last seen in charts: ${new Date(lastSeen).toLocaleDateString()}`}>
+                      ⚠ {label}
+                    </span>
+                  </>
+                )
+              })()}
               {song.badge && (
                 <>
                   <span className="w-[3px] h-[3px] rounded-full bg-[var(--border2)]" />

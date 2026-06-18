@@ -37,14 +37,33 @@ export function formatRankChange(change: number, isNew: boolean): string {
   return '—'
 }
 
-/** Generate a slug from a string */
+/**
+ * Generate a slug from a string.
+ *
+ * Improved version (must stay in sync with worker/src/scrapers/helpers.ts):
+ *  - NFD-normalize + strip combining marks so "José" → "jose" (not "jos")
+ *  - Strip parentheticals like "(feat. X)" and "(Remix)" so the same song
+ *    gets the same slug across sources.
+ *  - "&" → "and" for consistency.
+ */
 export function slugify(str: string): string {
-  return str
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s-]/g, ' ')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
     .trim()
+}
+
+/** Normalize a slug for tolerant matching (used to compare slugs across sources). */
+export function normalizeSlugForLookup(slug: string): string {
+  return (slug || '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 /** Map platform ID to display label */
