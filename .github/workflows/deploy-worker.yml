@@ -1,0 +1,69 @@
+# Auto-deploys the Cloudflare Worker whenever code is pushed to main.
+#
+# Required GitHub secret:
+#   CLOUDFLARE_API_TOKEN — Cloudflare API token with Workers Scripts:Edit
+#                          permission for the musicpulse-api Worker.
+#                          Create at: https://dash.cloudflare.com/profile/api-tokens
+#                          Template: "Edit Cloudflare Workers" → restrict to this account.
+#
+# What it does:
+#   1. Triggers on push to main (only when worker/ files change)
+#   2. Installs deps + typechecks the Worker (aborts deploy on type error)
+#   3. Runs `wrangler deploy` from worker/
+#
+# To trigger manually: GitHub → Actions → "Deploy Worker" → Run workflow
+
+name: Deploy Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+# Prevent concurrent deploys — only the latest push should win
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install dependencies
+        working-directory: worker
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: worker
+        run: npx tsc --noEmit
+
+      - name: Deploy Worker
+        working-directory: worker
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Worker Deploy ${{ job.status == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Worker URL: https://musicpulse-api.odehebuka48.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
