@@ -1,36 +1,47 @@
-# Auto-deploys the Cloudflare Worker whenever code is pushed to main.
+# Auto-deploys BOTH the Cloudflare Worker AND the Cloudflare Pages frontend
+# whenever code is pushed to main.
 #
-# Required GitHub secret:
-#   CLOUDFLARE_API_TOKEN — Cloudflare API token with Workers Scripts:Edit
-#                          permission for the musicpulse-api Worker.
-#                          Create at: https://dash.cloudflare.com/profile/api-tokens
-#                          Template: "Edit Cloudflare Workers" → restrict to this account.
+# Required GitHub secrets:
+#   CLOUDFLARE_API_TOKEN  — Cloudflare API token with:
+#                           - Workers Scripts:Edit (for the Worker)
+#                           - Account:Workers Pages Storage:Edit (for Pages)
+#                           Create at: https://dash.cloudflare.com/profile/api-tokens
+#                           Template: "Edit Cloudflare Workers" → check Pages too.
 #
 # What it does:
-#   1. Triggers on push to main (only when worker/ files change)
-#   2. Installs deps + typechecks the Worker (aborts deploy on type error)
-#   3. Runs `wrangler deploy` from worker/
+#   1. Triggers on push to main (when worker/ OR src/ files change)
+#   2. Deploys the Worker (typechecks + wrangler deploy)
+#   3. Builds the Next.js frontend (next build → static export to out/)
+#   4. Deploys the static export to Cloudflare Pages via direct upload
 #
-# To trigger manually: GitHub → Actions → "Deploy Worker" → Run workflow
+# To trigger manually: GitHub → Actions → "Deploy Worker + Pages" → Run workflow
 
-name: Deploy Worker
+name: Deploy Worker + Pages
 
 on:
   push:
     branches: [main]
     paths:
       - 'worker/**'
+      - 'src/**'
+      - 'public/**'
+      - 'next.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'tailwind.config.ts'
+      - 'postcss.config.js'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
 # Prevent concurrent deploys — only the latest push should win
 concurrency:
-  group: deploy-worker
+  group: deploy-stack
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Deploy to Cloudflare
+  deploy-worker:
+    name: Deploy Worker
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -45,11 +56,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: worker/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Worker dependencies
         working-directory: worker
         run: npm ci
 
-      - name: Typecheck
+      - name: Typecheck Worker
         working-directory: worker
         run: npx tsc --noEmit
 
@@ -59,11 +70,69 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Summary
+      - name: Worker Summary
         if: always()
         run: |
           echo "## Worker Deploy ${{ job.status == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Worker URL: https://musicpulse-api.odehebuka48.workers.dev" >> $GITHUB_STEP_SUMMARY
           echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-pages:
+    name: Deploy Pages (Frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Typecheck frontend
+        run: npx tsc --noEmit
+
+      - name: Build frontend (Next.js static export)
+        run: npm run build
+        env:
+          # Forces Next.js to use the live Worker API instead of any mock data
+          NEXT_PUBLIC_API_URL: https://musicpulse-api.odehebuka48.workers.dev
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "out" ]; then
+            echo "❌ Build output directory 'out/' not found"
+            exit 1
+          fi
+          echo "✅ Build output ready"
+          ls -la out/ | head -20
+          echo ""
+          echo "Total files in out/: $(find out -type f | wc -l)"
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: musicpulse
+          directory: out
+          branch: main
+          # Don't trigger a build on Cloudflare's side — we already built locally
+          # and are uploading the static output.
+          # (cloudflare/pages-action uses direct upload by default)
+
+      - name: Pages Summary
+        if: always()
+        run: |
+          echo "## Pages Deploy ${{ job.status == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pages URL: https://musicpulse.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
